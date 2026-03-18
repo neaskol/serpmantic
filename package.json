@@ -1,0 +1,9 @@
+{
+  "name": "serpmantic",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --filter web dev",
+    "build": "pnpm --filter web build",
+    "dev:nlp": "cd services/nlp && uvicorn main:app --reload --port 8000"
+  }
+}
