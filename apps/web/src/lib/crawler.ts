@@ -1,4 +1,5 @@
 import * as cheerio from 'cheerio'
+import { logger } from './logger'
 
 export interface CrawledPage {
   url: string
@@ -18,6 +19,8 @@ export interface CrawledPage {
 
 export async function crawlPage(url: string): Promise<CrawledPage | null> {
   try {
+    logger.debug('Crawling page', { url })
+
     const response = await fetch(url, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (compatible; SERPmantics/1.0)',
@@ -26,7 +29,10 @@ export async function crawlPage(url: string): Promise<CrawledPage | null> {
       signal: AbortSignal.timeout(15000),
     })
 
-    if (!response.ok) return null
+    if (!response.ok) {
+      logger.warn('Page crawl failed - HTTP error', { url, status: response.status })
+      return null
+    }
 
     const html = await response.text()
     const $ = cheerio.load(html)
@@ -57,8 +63,19 @@ export async function crawlPage(url: string): Promise<CrawledPage | null> {
       lists: $body.find('ul, ol').length,
     }
 
+    logger.debug('Page crawled', {
+      url,
+      textLength: text.length,
+      title: title.substring(0, 50),
+      words: metrics.words,
+    })
+
     return { url, title, text, metrics }
-  } catch {
+  } catch (error) {
+    logger.warn('Page crawl failed', {
+      url,
+      error: error instanceof Error ? error.message : String(error),
+    })
     return null
   }
 }
