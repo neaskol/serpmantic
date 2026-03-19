@@ -84,6 +84,7 @@ class Logger {
     console.log(`${color}[${time}] ${level}${colors.reset} ${entry.message}`)
 
     // Extract context without core fields
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { timestamp, level: _, message, environment, ...context } = entry
 
     if (Object.keys(context).length > 0) {

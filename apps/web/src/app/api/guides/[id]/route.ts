@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { UpdateGuideSchema, formatZodError } from '@/lib/schemas'
-import { ZodError } from 'zod'
+import { UpdateGuideSchema } from '@/lib/schemas'
 import { logger } from '@/lib/logger'
 import { handleApiError, generateRequestId } from '@/lib/error-handler'
 
