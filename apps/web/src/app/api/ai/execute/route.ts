@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
     // Load guide with SERP context
     const { data: guide, error: guideError } = await supabase
       .from('guides')
-      .select('keyword, language, content, prompt_context')
+      .select('keyword, language, content, prompt_context, active_context_id')
       .eq('id', guideId)
       .single()
 
@@ -114,6 +114,30 @@ export async function POST(request: NextRequest) {
       termCount: semanticTerms?.length || 0,
     })
 
+    // Resolve user context: prefer FK reference, fall back to inline JSONB
+    let userContext = guide.prompt_context || undefined
+    if (guide.active_context_id) {
+      const { data: ctx } = await supabase
+        .from('prompt_contexts')
+        .select('audience, tone, sector, brief')
+        .eq('id', guide.active_context_id)
+        .single()
+      if (ctx) {
+        userContext = {
+          audience: ctx.audience || undefined,
+          tone: ctx.tone || undefined,
+          sector: ctx.sector || undefined,
+          brief: ctx.brief || undefined,
+        }
+      }
+    }
+
+    logger.debug('Context resolved', {
+      hasActiveContextId: !!guide.active_context_id,
+      hasFallbackContext: !!guide.prompt_context,
+      resolvedFields: userContext ? Object.keys(userContext).filter(k => userContext[k as keyof typeof userContext]) : [],
+    })
+
     // Build prompt context from SERP data
     const promptContext = buildPromptContext(
       serpAnalysis || null,
@@ -122,7 +146,7 @@ export async function POST(request: NextRequest) {
       {
         selectedText,
         currentContent: guide.content ? JSON.stringify(guide.content) : '',
-        userContext: guide.prompt_context || undefined,
+        userContext,
       }
     )
 

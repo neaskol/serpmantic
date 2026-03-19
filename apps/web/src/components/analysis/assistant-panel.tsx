@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useGuideStore } from '@/stores/guide-store'
 import { useEditorStore } from '@/stores/editor-store'
 import { useAiStore } from '@/stores/ai-store'
+import { useContextStore } from '@/stores/context-store'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -13,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Bot, Play, Plus, Settings, Sparkles, FileText, Pencil, CheckCircle, ImageIcon, Type, Wand2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { ContextSelector } from './context-selector'
 import type { Prompt } from '@/types/database'
 
 const CATEGORY_ICONS: Record<string, React.ReactNode> = {
@@ -45,6 +47,8 @@ export function AssistantPanel() {
   const acceptResult = useAiStore((s) => s.acceptResult)
   const rejectResult = useAiStore((s) => s.rejectResult)
   const reset = useAiStore((s) => s.reset)
+  const activeContextId = useContextStore((s) => s.activeContextId)
+  const contexts = useContextStore((s) => s.contexts)
 
   const [prompts, setPrompts] = useState<Prompt[]>([])
   const [loading, setLoading] = useState(true)
@@ -169,14 +173,17 @@ export function AssistantPanel() {
         Bibliotheque de prompts IA pour optimiser votre contenu. Chaque prompt utilise le modele le plus adapte.
       </p>
 
-      {/* Context warning */}
-      <Card size="sm" className="bg-amber-50 border-amber-200">
-        <CardContent className="py-2 px-3">
-          <p className="text-xs text-amber-700">
-            Aucun contexte disponible — Creez-en un pour personnaliser les prompts
-          </p>
-        </CardContent>
-      </Card>
+      {/* Context section */}
+      <ContextSelector />
+      {!activeContextId && contexts.length === 0 && (
+        <Card size="sm" className="bg-amber-50 border-amber-200">
+          <CardContent className="py-2 px-3">
+            <p className="text-xs text-amber-700">
+              Aucun contexte disponible — Creez-en un pour personnaliser les prompts
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Search */}
       <Input
