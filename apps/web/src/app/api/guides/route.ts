@@ -4,6 +4,38 @@ import { CreateGuideSchema } from '@/lib/schemas'
 import { logger } from '@/lib/logger'
 import { handleApiError, generateRequestId } from '@/lib/error-handler'
 
+/**
+ * @swagger
+ * /api/guides:
+ *   get:
+ *     summary: List all guides
+ *     description: Retrieve all content guides for the authenticated user, ordered by last updated
+ *     tags:
+ *       - Guides
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: List of guides
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Guide'
+ *       401:
+ *         description: Unauthorized - missing or invalid authentication
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 export async function GET() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -19,6 +51,66 @@ export async function GET() {
   return NextResponse.json(data)
 }
 
+/**
+ * @swagger
+ * /api/guides:
+ *   post:
+ *     summary: Create a new guide
+ *     description: Create a new content guide with keyword, language, and search engine settings
+ *     tags:
+ *       - Guides
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - keyword
+ *               - language
+ *               - searchEngine
+ *             properties:
+ *               keyword:
+ *                 type: string
+ *                 description: Target SEO keyword
+ *                 example: delegataire cee
+ *               language:
+ *                 type: string
+ *                 enum: [fr, en, it, de, es]
+ *                 description: Content language
+ *                 default: fr
+ *               searchEngine:
+ *                 type: string
+ *                 description: Target search engine for SERP analysis
+ *                 example: google.fr
+ *     responses:
+ *       201:
+ *         description: Guide created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Guide'
+ *       400:
+ *         description: Validation error - invalid request data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Unauthorized - missing or invalid authentication
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 export async function POST(request: NextRequest) {
   const startTime = Date.now()
   const requestId = generateRequestId()

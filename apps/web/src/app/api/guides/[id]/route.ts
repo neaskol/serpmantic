@@ -4,6 +4,57 @@ import { UpdateGuideSchema } from '@/lib/schemas'
 import { logger } from '@/lib/logger'
 import { handleApiError, generateRequestId } from '@/lib/error-handler'
 
+/**
+ * @swagger
+ * /api/guides/{id}:
+ *   get:
+ *     summary: Get guide by ID
+ *     description: Retrieve a single guide with all related SERP analysis data, pages, and semantic terms
+ *     tags:
+ *       - Guides
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Guide unique identifier
+ *     responses:
+ *       200:
+ *         description: Guide retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 guide:
+ *                   $ref: '#/components/schemas/Guide'
+ *                 analysis:
+ *                   $ref: '#/components/schemas/SerpAnalysis'
+ *                 pages:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                 terms:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *       404:
+ *         description: Guide not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const requestId = generateRequestId()
   logger.setRequestId(requestId)
@@ -52,6 +103,71 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   }
 }
 
+/**
+ * @swagger
+ * /api/guides/{id}:
+ *   patch:
+ *     summary: Update guide
+ *     description: Update guide content, meta tags, or other properties
+ *     tags:
+ *       - Guides
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Guide unique identifier
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               content:
+ *                 type: object
+ *                 description: TipTap editor content (JSON)
+ *               metaTitle:
+ *                 type: string
+ *                 maxLength: 60
+ *               metaDescription:
+ *                 type: string
+ *                 maxLength: 158
+ *               keyword:
+ *                 type: string
+ *               language:
+ *                 type: string
+ *                 enum: [fr, en, it, de, es]
+ *     responses:
+ *       200:
+ *         description: Guide updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Guide'
+ *       400:
+ *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Guide not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const startTime = Date.now()
   const requestId = generateRequestId()
@@ -94,6 +210,48 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   }
 }
 
+/**
+ * @swagger
+ * /api/guides/{id}:
+ *   delete:
+ *     summary: Delete guide
+ *     description: Permanently delete a guide and all related data (SERP analysis, pages, terms)
+ *     tags:
+ *       - Guides
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Guide unique identifier
+ *     responses:
+ *       200:
+ *         description: Guide deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *       404:
+ *         description: Guide not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const requestId = generateRequestId()
   logger.setRequestId(requestId)

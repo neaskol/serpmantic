@@ -10,6 +10,128 @@ import { getCachedSerpAnalysis, setCachedSerpAnalysis } from '@/lib/cache'
 import { logger } from '@/lib/logger'
 import { handleApiError, generateRequestId } from '@/lib/error-handler'
 
+/**
+ * @swagger
+ * /api/serp/analyze:
+ *   post:
+ *     summary: Analyze SERP for semantic optimization
+ *     description: |
+ *       Analyzes Google SERP results for a keyword to extract semantic terms, structural benchmarks, and competitive insights.
+ *
+ *       **Process:**
+ *       1. Rate limit check (5 requests/hour)
+ *       2. Cache lookup (24h TTL)
+ *       3. Fetch top 10 SERP results
+ *       4. Crawl and extract content from each page
+ *       5. NLP analysis: tokenization → lemmatization → TF-IDF
+ *       6. Calculate percentile benchmarks (P10-P90)
+ *       7. Store results and return analysis
+ *
+ *       **Caching:** Results are cached for 24 hours to reduce API costs and improve response time.
+ *     tags:
+ *       - SERP Analysis
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - keyword
+ *               - language
+ *               - searchEngine
+ *               - guideId
+ *             properties:
+ *               keyword:
+ *                 type: string
+ *                 description: Target SEO keyword to analyze
+ *                 example: delegataire cee
+ *               language:
+ *                 type: string
+ *                 enum: [fr, en, it, de, es]
+ *                 description: Language for SERP analysis
+ *                 default: fr
+ *               searchEngine:
+ *                 type: string
+ *                 description: Target search engine
+ *                 example: google.fr
+ *               guideId:
+ *                 type: string
+ *                 format: uuid
+ *                 description: Guide ID to link analysis to
+ *     responses:
+ *       200:
+ *         description: SERP analysis completed successfully
+ *         headers:
+ *           X-Cache:
+ *             description: Cache status (HIT or MISS)
+ *             schema:
+ *               type: string
+ *               enum: [HIT, MISS]
+ *           X-RateLimit-Limit:
+ *             description: Request limit per hour
+ *             schema:
+ *               type: integer
+ *           X-RateLimit-Remaining:
+ *             description: Remaining requests in current window
+ *             schema:
+ *               type: integer
+ *           X-RateLimit-Reset:
+ *             description: Unix timestamp when limit resets
+ *             schema:
+ *               type: integer
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SerpAnalysis'
+ *       400:
+ *         description: Validation error - invalid request data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       429:
+ *         description: Rate limit exceeded (5 requests/hour)
+ *         headers:
+ *           Retry-After:
+ *             description: Seconds until next request allowed
+ *             schema:
+ *               type: integer
+ *           X-RateLimit-Limit:
+ *             schema:
+ *               type: integer
+ *           X-RateLimit-Remaining:
+ *             schema:
+ *               type: integer
+ *           X-RateLimit-Reset:
+ *             schema:
+ *               type: integer
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Rate limit exceeded
+ *                 message:
+ *                   type: string
+ *                 limit:
+ *                   type: integer
+ *                 remaining:
+ *                   type: integer
+ *                 reset:
+ *                   type: string
+ *                   format: date-time
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 export async function POST(request: NextRequest) {
   const startTime = Date.now()
   const requestId = generateRequestId()
