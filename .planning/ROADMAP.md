@@ -13,7 +13,7 @@ Sprint 3 delivers AI-powered content assistance by building a multi-LLM foundati
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: AI Foundation** - Multi-LLM streaming infrastructure and database schema
-- [ ] **Phase 2: Module IAssistant** - Prompt library with 15 public prompts and execution engine
+- [x] **Phase 2: Module IAssistant** - Prompt library with 15 public prompts and execution engine
 - [ ] **Phase 3: Module Plan** - AI-generated content outlines from SERP analysis
 - [ ] **Phase 4: Modules Intention & Meta** - Search intent classification and SEO metadata generation
 - [ ] **Phase 5: Context System** - Prompt enrichment with audience, tone, sector, brief
@@ -54,8 +54,10 @@ Plans:
 **Plans**: 2 plans in 2 waves
 
 Plans:
-- [ ] 02-01-PLAN.md — Editor Store integration + Prompts API + 15 seeded prompts (Wave 1)
-- [ ] 02-02-PLAN.md — AssistantPanel rewrite with streaming, selection detection, result modal (Wave 2)
+- [x] 02-01: Editor Store integration + Prompts API + 15 seeded prompts (Wave 1)
+- [x] 02-02: AssistantPanel rewrite with streaming, selection detection, result modal (Wave 2)
+
+**Completed**: 2026-03-19
 
 ### Phase 3: Module Plan
 **Goal**: Users can generate AI-powered H2/H3 content outlines based on SERP competitor structure with one-click insertion into editor
@@ -132,8 +134,8 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. AI Foundation | 3/3 | ✓ Complete | 2026-03-19 |
-| 2. Module IAssistant | 0/3 | Not started | - |
+| 2. Module IAssistant | 2/2 | ✓ Complete | 2026-03-19 |
 | 3. Module Plan | 0/3 | Not started | - |
-| 4. Modules Intention & Meta | 0/2 | Not started | - |
+| 4. Modules Intention & Meta | 0/3 | Not started | - |
 | 5. Context System | 0/3 | Not started | - |
 | 6. Testing & Quality | 0/3 | Not started | - |
