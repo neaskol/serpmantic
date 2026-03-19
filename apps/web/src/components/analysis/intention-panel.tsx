@@ -8,6 +8,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Target, Search, FileCheck, HelpCircle, ShoppingCart, Navigation, BarChart3 } from 'lucide-react'
+import { toast } from 'sonner'
 
 type IntentType = 'informationnel' | 'transactionnel' | 'navigationnel' | 'comparatif'
 
@@ -63,12 +64,16 @@ export function IntentionPanel() {
         }),
       })
 
-      if (res.ok) {
-        const data = await res.json()
-        setIntentResult(data)
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}))
+        toast.error(errorData.message || 'Erreur lors de l\'analyse des intentions')
+        return
       }
-    } catch {
-      // error handled silently
+
+      const data = await res.json()
+      setIntentResult(data)
+    } catch (error) {
+      toast.error('Erreur lors de l\'analyse des intentions. Veuillez reessayer.')
     } finally {
       setAnalyzing(false)
     }
@@ -90,12 +95,18 @@ export function IntentionPanel() {
         }),
       })
 
-      if (res.ok) {
-        const data = await res.json()
-        setContentAnalysis(data)
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}))
+        toast.error(
+          errorData.message || 'Erreur lors de l\'analyse du contenu. Verifiez que votre contenu contient au moins 50 caracteres.'
+        )
+        return
       }
-    } catch {
-      // error handled silently
+
+      const data = await res.json()
+      setContentAnalysis(data)
+    } catch (error) {
+      toast.error('Erreur lors de l\'analyse du contenu. Veuillez reessayer.')
     } finally {
       setAnalyzingContent(false)
     }
