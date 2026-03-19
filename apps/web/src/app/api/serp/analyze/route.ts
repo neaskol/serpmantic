@@ -332,16 +332,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to save analysis', detail: analysisError }, { status: 500 })
     }
 
-    // Insert SERP pages
-    const { error: pagesError } = await supabase
+    // Insert SERP pages (with .select() to get inserted data in one round trip)
+    const { data: savedPages, error: pagesError } = await supabase
       .from('serp_pages')
       .insert(serpPagesData.map(p => ({ ...p, serp_analysis_id: analysis.id })))
+      .select()
+      .order('position')
 
-    if (pagesError) {
+    if (pagesError || !savedPages) {
       return NextResponse.json({ error: 'Failed to save SERP pages', detail: pagesError }, { status: 500 })
     }
 
-    // Insert semantic terms
+    // Insert semantic terms (with .select() to get inserted data in one round trip)
     const termsToInsert = [
       ...nlpData.terms.map((t: Record<string, unknown>) => ({
         serp_analysis_id: analysis.id,
@@ -367,25 +369,14 @@ export async function POST(request: NextRequest) {
       })),
     ]
 
-    const { error: termsError } = await supabase
+    const { data: savedTerms, error: termsError } = await supabase
       .from('semantic_terms')
       .insert(termsToInsert)
+      .select()
 
-    if (termsError) {
+    if (termsError || !savedTerms) {
       return NextResponse.json({ error: 'Failed to save terms', detail: termsError }, { status: 500 })
     }
-
-    // 9. Return the complete data
-    const { data: savedTerms } = await supabase
-      .from('semantic_terms')
-      .select()
-      .eq('serp_analysis_id', analysis.id)
-
-    const { data: savedPages } = await supabase
-      .from('serp_pages')
-      .select()
-      .eq('serp_analysis_id', analysis.id)
-      .order('position')
 
     const result = {
       analysis,
