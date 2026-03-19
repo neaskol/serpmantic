@@ -70,3 +70,6 @@ build/
 *.tmp
 *.temp
 .cache/
+
+# Git worktrees
+.worktrees/
