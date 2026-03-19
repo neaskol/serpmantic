@@ -2,7 +2,7 @@ import { vi } from 'vitest'
 
 // Supabase mock factory
 export function createMockSupabaseClient() {
-  return {
+  const mockClient = {
     from: vi.fn().mockReturnThis(),
     select: vi.fn().mockReturnThis(),
     insert: vi.fn().mockReturnThis(),
@@ -11,9 +11,13 @@ export function createMockSupabaseClient() {
     eq: vi.fn().mockReturnThis(),
     single: vi.fn(),
     auth: {
-      getUser: vi.fn(),
+      getUser: vi.fn().mockResolvedValue({
+        data: { user: { id: 'test-user-id' } },
+        error: null,
+      }),
     },
   }
+  return mockClient
 }
 
 // Rate limiter mock
