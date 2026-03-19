@@ -51,12 +51,11 @@ Plans:
   4. AI execution shows loading state with progress indicator during streaming
   5. User receives AI result in preview modal with Accept (insert to editor) and Reject (discard) buttons
   6. Prompts automatically include SERP semantic terms and warn against using terms-to-avoid
-**Plans**: TBD
+**Plans**: 2 plans in 2 waves
 
 Plans:
-- [ ] 02-01: Create IAssistant UI with prompt library and execution controls
-- [ ] 02-02: Build prompt execution flow with selection/document modes
-- [ ] 02-03: Implement SERP context enrichment and result preview modal
+- [ ] 02-01-PLAN.md — Editor Store integration + Prompts API + 15 seeded prompts (Wave 1)
+- [ ] 02-02-PLAN.md — AssistantPanel rewrite with streaming, selection detection, result modal (Wave 2)
 
 ### Phase 3: Module Plan
 **Goal**: Users can generate AI-powered H2/H3 content outlines based on SERP competitor structure with one-click insertion into editor
