@@ -6,10 +6,36 @@ import { calculateScore } from '@/lib/scoring'
 import type { SemanticTerm } from '@/types/database'
 import { AnalyzeRequestSchema, formatZodError } from '@/lib/schemas'
 import { ZodError } from 'zod'
+import { serpRateLimit, getUserIdentifier, checkRateLimit } from '@/lib/rate-limit'
 
 export async function POST(request: NextRequest) {
   try {
-    // Validate request body with Zod
+    // 1. Rate limiting check (before validation to save resources)
+    const identifier = getUserIdentifier(request)
+    const rateLimitResult = await checkRateLimit(serpRateLimit, identifier)
+
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        {
+          error: 'Rate limit exceeded',
+          message: 'You have exceeded the maximum number of SERP analyses per hour (5). Please try again later.',
+          limit: rateLimitResult.limit,
+          remaining: rateLimitResult.remaining,
+          reset: new Date(rateLimitResult.reset).toISOString(),
+        },
+        {
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+            'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+            'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+            'Retry-After': Math.ceil((rateLimitResult.reset - Date.now()) / 1000).toString(),
+          },
+        }
+      )
+    }
+
+    // 2. Validate request body with Zod
     const body = await request.json()
     const validatedData = AnalyzeRequestSchema.parse(body)
 
@@ -188,11 +214,20 @@ export async function POST(request: NextRequest) {
       .eq('serp_analysis_id', analysis.id)
       .order('position')
 
-    return NextResponse.json({
-      analysis,
-      pages: savedPages,
-      terms: savedTerms,
-    })
+    return NextResponse.json(
+      {
+        analysis,
+        pages: savedPages,
+        terms: savedTerms,
+      },
+      {
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+        },
+      }
+    )
   } catch (error) {
     if (error instanceof ZodError) {
       return NextResponse.json(
