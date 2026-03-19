@@ -7,6 +7,7 @@ import type { SemanticTerm } from '@/types/database'
 import { AnalyzeRequestSchema, formatZodError } from '@/lib/schemas'
 import { ZodError } from 'zod'
 import { serpRateLimit, getUserIdentifier, checkRateLimit } from '@/lib/rate-limit'
+import { getCachedSerpAnalysis, setCachedSerpAnalysis } from '@/lib/cache'
 
 export async function POST(request: NextRequest) {
   try {
@@ -43,14 +44,30 @@ export async function POST(request: NextRequest) {
     const lang = language
     const engine = searchEngine
 
-    // 1. Fetch SERP results
+    // 3. Check cache first (skip expensive SERP analysis if cached)
+    const cached = await getCachedSerpAnalysis(keyword, lang)
+    if (cached) {
+      console.log('✅ Cache hit for SERP analysis:', keyword, lang)
+      return NextResponse.json(cached, {
+        headers: {
+          'X-Cache': 'HIT',
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+        },
+      })
+    }
+
+    console.log('❌ Cache miss - performing SERP analysis:', keyword, lang)
+
+    // 4. Fetch SERP results (cache miss)
     const serpResults = await fetchSerpResults(keyword, lang, engine)
 
     if (serpResults.length === 0) {
       return NextResponse.json({ error: 'No SERP results found' }, { status: 404 })
     }
 
-    // 2. Crawl pages in parallel
+    // 5. Crawl pages in parallel
     const crawlPromises = serpResults.map(r => crawlPage(r.link))
     const crawledPages = (await Promise.all(crawlPromises)).filter(Boolean) as CrawledPage[]
 
@@ -58,7 +75,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Not enough pages could be crawled' }, { status: 500 })
     }
 
-    // 3. Send texts to NLP service
+    // 6. Send texts to NLP service
     const nlpResponse = await fetch(`${process.env.NLP_SERVICE_URL}/analyze`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -74,7 +91,7 @@ export async function POST(request: NextRequest) {
 
     const nlpData = await nlpResponse.json()
 
-    // 4. Calculate structural benchmarks (P10-P90)
+    // 7. Calculate structural benchmarks (P10-P90)
     const metricsArrays = {
       words: crawledPages.map(p => p.metrics.words),
       headings: crawledPages.map(p => p.metrics.headings),
@@ -100,7 +117,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 5. Build semantic terms for scoring each SERP page
+    // 8. Build semantic terms for scoring each SERP page
     const semanticTermsForScoring: SemanticTerm[] = nlpData.terms.map((t: Record<string, unknown>, i: number) => ({
       id: `temp-${i}`,
       serp_analysis_id: '',
@@ -214,20 +231,23 @@ export async function POST(request: NextRequest) {
       .eq('serp_analysis_id', analysis.id)
       .order('position')
 
-    return NextResponse.json(
-      {
-        analysis,
-        pages: savedPages,
-        terms: savedTerms,
+    const result = {
+      analysis,
+      pages: savedPages,
+      terms: savedTerms,
+    }
+
+    // 10. Cache the result for future requests (24h TTL)
+    await setCachedSerpAnalysis(keyword, lang, result)
+
+    return NextResponse.json(result, {
+      headers: {
+        'X-Cache': 'MISS',
+        'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+        'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+        'X-RateLimit-Reset': rateLimitResult.reset.toString(),
       },
-      {
-        headers: {
-          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
-          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
-          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
-        },
-      }
-    )
+    })
   } catch (error) {
     if (error instanceof ZodError) {
       return NextResponse.json(
