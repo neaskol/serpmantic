@@ -7,6 +7,7 @@ import { GuideCard } from '@/components/dashboard/guide-card'
 import { CreateGuideDialog } from '@/components/dashboard/create-guide-dialog'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
+import { ErrorBoundary } from '@/components/error-boundary'
 
 interface Guide {
   id: string
@@ -71,28 +72,30 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <GuideCardSkeleton />
-          <GuideCardSkeleton />
-          <GuideCardSkeleton />
-        </div>
-      ) : guides.length === 0 ? (
-        <div className="text-center py-12">
-          <p className="text-muted-foreground mb-4">Vous n&apos;avez pas encore de guide.</p>
-          <CreateGuideDialog />
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {guides.map((guide) => (
-            <GuideCard
-              key={guide.id}
-              guide={guide}
-              onDelete={(id) => setGuides((prev) => prev.filter((g) => g.id !== id))}
-            />
-          ))}
-        </div>
-      )}
+      <ErrorBoundary>
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <GuideCardSkeleton />
+            <GuideCardSkeleton />
+            <GuideCardSkeleton />
+          </div>
+        ) : guides.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground mb-4">Vous n&apos;avez pas encore de guide.</p>
+            <CreateGuideDialog />
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {guides.map((guide) => (
+              <GuideCard
+                key={guide.id}
+                guide={guide}
+                onDelete={(id) => setGuides((prev) => prev.filter((g) => g.id !== id))}
+              />
+            ))}
+          </div>
+        )}
+      </ErrorBoundary>
     </div>
   )
 }
