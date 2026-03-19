@@ -10,29 +10,29 @@ See: .planning/PROJECT.md (updated 2026-03-19)
 ## Current Position
 
 Phase: 2 of 6 (Module IAssistant)
-Plan: 01 of 03 completed
+Plan: 02 of 03 completed
 Status: In progress
-Last activity: 2026-03-19 — Completed 02-01-PLAN.md (IAssistant Infrastructure)
+Last activity: 2026-03-19 — Completed 02-02-PLAN.md (IAssistant UI Integration)
 
-Progress: [████░░░░░░] 44% (4/9 total plans across all phases)
+Progress: [█████░░░░░] 56% (5/9 total plans across all phases)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 4
-- Average duration: 6.8 min
-- Total execution time: 0.45 hours
+- Total plans completed: 5
+- Average duration: 7.6 min
+- Total execution time: 0.63 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01-ai-foundation | 3/3 | 22 min | 7.3 min |
-| 02-module-iassistant | 1/3 | 5 min | 5.0 min |
+| 02-module-iassistant | 2/3 | 17 min | 8.5 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (8min), 01-02 (3min), 01-03 (11min), 02-01 (5min)
-- Trend: Excellent velocity (3-11 min/plan)
+- Last 5 plans: 01-02 (3min), 01-03 (11min), 02-01 (5min), 02-02 (12min)
+- Trend: Consistent velocity (3-12 min/plan, avg 7.8 min)
 
 *Updated after each plan completion*
 
@@ -42,6 +42,12 @@ Progress: [████░░░░░░] 44% (4/9 total plans across all phase
 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
+
+**Phase 02-02 (IAssistant UI Integration):**
+- Removed hard-coded PUBLIC_PROMPTS in favor of database fetch — AssistantPanel now uses GET /api/prompts
+- Captured selection before execution to preserve range after Dialog steals focus — Dialog.open resets editor selection
+- AI SDK v5 compatibility: model type cast via unknown, usage property fallback (promptTokens/inputTokens) — streamText API differences from v4
+- Removed maxTokens parameter (not supported in AI SDK v5 streamText API) — Model-specific defaults used instead
 
 **Phase 02-01 (IAssistant Infrastructure):**
 - Editor instance stored in Zustand for global access — Needed by AssistantPanel for selection detection
@@ -102,10 +108,16 @@ None yet.
 - Initial prompt templates are hypotheses — Phase 2 should include A/B testing
 - Monitor user satisfaction (thumbs up/down), edit rate, retry rate
 
+**AI SDK v5 Compatibility (02-02):**
+- ✅ Fixed model type incompatibility (LanguageModelV3 → LanguageModel union)
+- ✅ Fixed usage property names (promptTokens/inputTokens fallback)
+- ✅ Removed unsupported maxTokens parameter
+- Build now passes with AI SDK v5
+
 ## Session Continuity
 
-Last session: 2026-03-19 15:54 — Plan 02-01 execution
-Stopped at: Completed 02-01-PLAN.md with SUMMARY (IAssistant Infrastructure)
+Last session: 2026-03-19 16:08 — Plan 02-02 execution
+Stopped at: Completed 02-02-PLAN.md with SUMMARY (IAssistant UI Integration)
 Resume file: None
 
-Next step: Continue Phase 2 - Plan 02-02 (IAssistant UI), Plan 02-03 (Prompt Execution Flow)
+Next step: Plan 02-03 (Prompt Execution Flow) — Final plan in Phase 2
