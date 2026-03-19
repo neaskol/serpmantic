@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: AI Foundation** - Multi-LLM streaming infrastructure and database schema
 - [x] **Phase 2: Module IAssistant** - Prompt library with 15 public prompts and execution engine
 - [ ] **Phase 3: Module Plan** - AI-generated content outlines from SERP analysis
-- [ ] **Phase 4: Modules Intention & Meta** - Search intent classification and SEO metadata generation
+- [x] **Phase 4: Modules Intention & Meta** - Search intent classification and SEO metadata generation
 - [ ] **Phase 5: Context System** - Prompt enrichment with audience, tone, sector, brief
 - [ ] **Phase 6: Testing & Quality** - Comprehensive test coverage for AI modules
 
@@ -88,8 +88,10 @@ Plans:
 **Plans**: 2 plans in 1 wave
 
 Plans:
-- [ ] 04-01-PLAN.md — Intention backend API routes (classification + alignment) with JSON extractor utility (Wave 1)
-- [ ] 04-02-PLAN.md — Meta backend API route (AI generation) + MetaPanel field name fix + error handling (Wave 1)
+- [x] 04-01-PLAN.md — Intention backend API routes (classification + alignment) with JSON extractor utility (Wave 1)
+- [x] 04-02-PLAN.md — Meta backend API route (AI generation) + MetaPanel field name fix + error handling (Wave 1)
+
+**Completed**: 2026-03-19
 
 ### Phase 5: Context System
 **Goal**: Users can create reusable prompt contexts (audience, tone, sector, brief) that automatically enrich all AI prompts
@@ -134,6 +136,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 1. AI Foundation | 3/3 | ✓ Complete | 2026-03-19 |
 | 2. Module IAssistant | 2/2 | ✓ Complete | 2026-03-19 |
 | 3. Module Plan | 0/2 | Not started | - |
-| 4. Modules Intention & Meta | 0/2 | Not started | - |
+| 4. Modules Intention & Meta | 2/2 | ✓ Complete | 2026-03-19 |
 | 5. Context System | 0/2 | Not started | - |
 | 6. Testing & Quality | 0/3 | Not started | - |
