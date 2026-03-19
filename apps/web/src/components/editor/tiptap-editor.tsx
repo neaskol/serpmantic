@@ -22,6 +22,7 @@ import { useGuideStore } from '@/stores/guide-store'
 export function TiptapEditor() {
   const setContent = useEditorStore((s) => s.setContent)
   const setPlainText = useEditorStore((s) => s.setPlainText)
+  const setEditor = useEditorStore((s) => s.setEditor)
   const recalculateScore = useGuideStore((s) => s.recalculateScore)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -56,6 +57,12 @@ export function TiptapEditor() {
       }, 500)
     },
   })
+
+  // Register editor instance with store
+  useEffect(() => {
+    setEditor(editor ?? null)
+    return () => setEditor(null)
+  }, [editor, setEditor])
 
   // Cleanup debounce on unmount
   useEffect(() => {
