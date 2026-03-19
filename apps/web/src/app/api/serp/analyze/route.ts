@@ -4,18 +4,30 @@ import { crawlPage, type CrawledPage } from '@/lib/crawler'
 import { createClient } from '@/lib/supabase/server'
 import { calculateScore } from '@/lib/scoring'
 import type { SemanticTerm } from '@/types/database'
-import { AnalyzeRequestSchema, formatZodError } from '@/lib/schemas'
-import { ZodError } from 'zod'
+import { AnalyzeRequestSchema } from '@/lib/schemas'
 import { serpRateLimit, getUserIdentifier, checkRateLimit } from '@/lib/rate-limit'
 import { getCachedSerpAnalysis, setCachedSerpAnalysis } from '@/lib/cache'
+import { logger } from '@/lib/logger'
+import { handleApiError, generateRequestId } from '@/lib/error-handler'
 
 export async function POST(request: NextRequest) {
+  const startTime = Date.now()
+  const requestId = generateRequestId()
+  logger.setRequestId(requestId)
+
   try {
+    logger.info('SERP analysis started', { requestId })
+
     // 1. Rate limiting check (before validation to save resources)
     const identifier = getUserIdentifier(request)
     const rateLimitResult = await checkRateLimit(serpRateLimit, identifier)
 
     if (!rateLimitResult.success) {
+      logger.warn('Rate limit exceeded', {
+        identifier,
+        limit: rateLimitResult.limit,
+        remaining: rateLimitResult.remaining,
+      })
       return NextResponse.json(
         {
           error: 'Rate limit exceeded',
@@ -47,7 +59,12 @@ export async function POST(request: NextRequest) {
     // 3. Check cache first (skip expensive SERP analysis if cached)
     const cached = await getCachedSerpAnalysis(keyword, lang)
     if (cached) {
-      console.log('✅ Cache hit for SERP analysis:', keyword, lang)
+      logger.info('Cache hit', {
+        keyword,
+        language: lang,
+        requestId,
+        duration: Date.now() - startTime,
+      })
       return NextResponse.json(cached, {
         headers: {
           'X-Cache': 'HIT',
@@ -58,24 +75,36 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    console.log('❌ Cache miss - performing SERP analysis:', keyword, lang)
+    logger.info('Cache miss', { keyword, language: lang, requestId })
 
     // 4. Fetch SERP results (cache miss)
+    logger.info('Fetching SERP results', { keyword, engine })
     const serpResults = await fetchSerpResults(keyword, lang, engine)
+    logger.info('SERP results fetched', { numResults: serpResults.length })
 
     if (serpResults.length === 0) {
       return NextResponse.json({ error: 'No SERP results found' }, { status: 404 })
     }
 
     // 5. Crawl pages in parallel
+    logger.info('Crawling SERP pages', { numPages: serpResults.length })
     const crawlPromises = serpResults.map(r => crawlPage(r.link))
     const crawledPages = (await Promise.all(crawlPromises)).filter(Boolean) as CrawledPage[]
+    logger.info('Pages crawled', {
+      successful: crawledPages.length,
+      total: serpResults.length,
+    })
 
     if (crawledPages.length < 2) {
       return NextResponse.json({ error: 'Not enough pages could be crawled' }, { status: 500 })
     }
 
     // 6. Send texts to NLP service
+    logger.info('Calling NLP service', {
+      language: lang,
+      numPages: crawledPages.length,
+    })
+    const nlpStartTime = Date.now()
     const nlpResponse = await fetch(`${process.env.NLP_SERVICE_URL}/analyze`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -86,10 +115,15 @@ export async function POST(request: NextRequest) {
     })
 
     if (!nlpResponse.ok) {
-      return NextResponse.json({ error: 'NLP service error' }, { status: 500 })
+      throw new Error(`NLP service returned ${nlpResponse.status}`)
     }
 
     const nlpData = await nlpResponse.json()
+    logger.info('NLP analysis completed', {
+      termsFound: nlpData.terms?.length || 0,
+      termsToAvoid: nlpData.terms_to_avoid?.length || 0,
+      duration: Date.now() - nlpStartTime,
+    })
 
     // 7. Calculate structural benchmarks (P10-P90)
     const metricsArrays = {
@@ -239,6 +273,15 @@ export async function POST(request: NextRequest) {
 
     // 10. Cache the result for future requests (24h TTL)
     await setCachedSerpAnalysis(keyword, lang, result)
+    logger.info('Results cached', { keyword, language: lang, ttl: 86400 })
+
+    logger.info('SERP analysis completed', {
+      keyword,
+      language: lang,
+      score: result.analysis?.score || 0,
+      duration: Date.now() - startTime,
+      requestId,
+    })
 
     return NextResponse.json(result, {
       headers: {
@@ -249,16 +292,11 @@ export async function POST(request: NextRequest) {
       },
     })
   } catch (error) {
-    if (error instanceof ZodError) {
-      return NextResponse.json(
-        {
-          error: 'Validation failed',
-          details: formatZodError(error)
-        },
-        { status: 400 }
-      )
-    }
-    console.error('SERP analysis error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return handleApiError(error, {
+      route: '/api/serp/analyze',
+      context: {},
+    })
+  } finally {
+    logger.clearRequestId()
   }
 }

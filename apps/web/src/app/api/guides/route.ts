@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { CreateGuideSchema, formatZodError } from '@/lib/schemas'
-import { ZodError } from 'zod'
+import { CreateGuideSchema } from '@/lib/schemas'
+import { logger } from '@/lib/logger'
+import { handleApiError, generateRequestId } from '@/lib/error-handler'
 
 export async function GET() {
   const supabase = await createClient()
@@ -19,7 +20,13 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  const startTime = Date.now()
+  const requestId = generateRequestId()
+  logger.setRequestId(requestId)
+
   try {
+    logger.info('Create guide request', { requestId })
+
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -42,17 +49,22 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+    logger.info('Guide created', {
+      guideId: data.id,
+      keyword: validatedData.keyword,
+      language: validatedData.language,
+      duration: Date.now() - startTime,
+      requestId,
+    })
+
     return NextResponse.json(data, { status: 201 })
   } catch (error) {
-    if (error instanceof ZodError) {
-      return NextResponse.json(
-        {
-          error: 'Validation failed',
-          details: formatZodError(error)
-        },
-        { status: 400 }
-      )
-    }
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return handleApiError(error, {
+      route: '/api/guides',
+      context: {},
+    })
+  } finally {
+    logger.clearRequestId()
   }
 }
