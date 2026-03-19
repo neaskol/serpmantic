@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/breadcrumb'
 import Link from 'next/link'
 import { toast } from 'sonner'
+import { ErrorBoundary } from '@/components/error-boundary'
 
 export default function GuideEditorPage() {
   const { id } = useParams()
@@ -156,12 +157,16 @@ export default function GuideEditorPage() {
           {loading ? (
             <div className="flex items-center justify-center h-full text-muted-foreground">Chargement...</div>
           ) : (
-            <TiptapEditor />
+            <ErrorBoundary>
+              <TiptapEditor />
+            </ErrorBoundary>
           )}
         </ResizablePanel>
         <ResizableHandle withHandle />
         <ResizablePanel defaultSize={50} minSize={25}>
-          <AnalysisPanel />
+          <ErrorBoundary>
+            <AnalysisPanel />
+          </ErrorBoundary>
         </ResizablePanel>
       </ResizablePanelGroup>
 
