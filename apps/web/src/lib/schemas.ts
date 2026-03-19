@@ -84,3 +84,23 @@ export type StructuralBenchmarks = z.infer<typeof StructuralBenchmarksSchema>
 export function formatZodError(error: z.ZodError): string {
   return error.message
 }
+
+// === AI Module Schemas (Sprint 3) ===
+
+export const ExecuteRequestSchema = z.object({
+  promptId: z.string().uuid(),
+  guideId: z.string().uuid(),
+  selectedText: z.string().optional(),
+  scope: z.enum(['selection', 'document']).default('document'),
+})
+
+export type ExecuteRequest = z.infer<typeof ExecuteRequestSchema>
+
+export const PromptContextSchema = z.object({
+  audience: z.string().max(200).optional(),
+  tone: z.string().max(100).optional(),
+  sector: z.string().max(200).optional(),
+  brief: z.string().max(2000).optional(),
+})
+
+export type PromptContextInput = z.infer<typeof PromptContextSchema>

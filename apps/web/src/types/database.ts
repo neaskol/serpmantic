@@ -91,3 +91,46 @@ export type ScoreResult = {
   termStatuses: TermStatus[]
   structuralMetrics: StructuralMetrics
 }
+
+// === AI Module Types (Sprint 3) ===
+
+export type Prompt = {
+  id: string
+  title: string
+  description: string | null
+  llm_provider: 'anthropic' | 'openai'
+  model_id: string
+  task_type: string
+  prompt_template: string
+  system_prompt: string | null
+  scope: 'selection' | 'document' | 'full'
+  is_public: boolean
+  owner_id: string | null
+  category: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type AiRequest = {
+  id: string
+  user_id: string
+  guide_id: string
+  prompt_id: string | null
+  model_id: string
+  prompt_tokens: number
+  completion_tokens: number
+  total_tokens: number
+  estimated_cost: number
+  finish_reason: string | null
+  error_message: string | null
+  created_at: string
+}
+
+export type AiStatus = 'idle' | 'loading' | 'streaming' | 'success' | 'error'
+
+export type PromptContext = {
+  audience?: string
+  tone?: string
+  sector?: string
+  brief?: string
+}
