@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { getUserIdentifier, checkRateLimit } from '../rate-limit'
 
 describe('getUserIdentifier', () => {
@@ -72,7 +72,7 @@ describe('checkRateLimit', () => {
         remaining: 4,
         reset: Date.now() + 3600000,
       }),
-    } as any
+    } as unknown
 
     const result = await checkRateLimit(mockRateLimiter, 'test-user')
 
@@ -90,7 +90,7 @@ describe('checkRateLimit', () => {
         remaining: 0,
         reset: Date.now() + 3600000,
       }),
-    } as any
+    } as unknown
 
     const result = await checkRateLimit(mockRateLimiter, 'test-user')
 

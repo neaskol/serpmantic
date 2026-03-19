@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 // Create a shared mock that will be returned by all calls
-let mockSupabase: any
+let mockSupabase: unknown
 
 // Mock all dependencies at top level
 vi.mock('@/lib/supabase/server', () => ({
