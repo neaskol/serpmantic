@@ -31,12 +31,12 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. AI state (loading, results, errors) persists in Zustand store across component renders
   4. Database stores prompt templates with LLM provider assignments
   5. Database tracks AI request tokens and costs per guide
-**Plans**: TBD
+**Plans**: 3 plans in 2 waves
 
 Plans:
-- [ ] 01-01: Install Vercel AI SDK and configure multi-LLM providers
-- [ ] 01-02: Create streaming Route Handler and Context Builder
-- [ ] 01-03: Build AI Zustand store and database schema
+- [ ] 01-01: Install AI SDK + Provider Registry + LLM Router + Context Builder (Wave 1)
+- [ ] 01-02: Create Prompt Executor + /api/ai/execute streaming Route Handler (Wave 2)
+- [ ] 01-03: AI types, Zod schemas, Zustand store + database migrations (Wave 1)
 
 ### Phase 2: Module IAssistant
 **Goal**: Users can select from 15 pre-built prompts, execute them on selected text or full document, and accept/reject AI suggestions
