@@ -5,33 +5,34 @@
 See: .planning/PROJECT.md (updated 2026-03-19)
 
 **Core value:** Real-time semantic scoring (0-120) that compares user content against SERP benchmarks and provides actionable term-by-term recommendations.
-**Current focus:** Phase 1 - AI Foundation
+**Current focus:** Phase 2 - Module IAssistant
 
 ## Current Position
 
-Phase: 1 of 6 (AI Foundation)
-Plan: 03 of 03 completed
-Status: Phase 1 complete
-Last activity: 2026-03-19 — Completed 01-02-PLAN.md (Prompt Executor & Streaming API)
+Phase: 2 of 6 (Module IAssistant)
+Plan: 01 of 03 completed
+Status: In progress
+Last activity: 2026-03-19 — Completed 02-01-PLAN.md (IAssistant Infrastructure)
 
-Progress: [███░░░░░░░] 33% (3/9 total plans across all phases)
+Progress: [████░░░░░░] 44% (4/9 total plans across all phases)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 3
-- Average duration: 7.3 min
-- Total execution time: 0.37 hours
+- Total plans completed: 4
+- Average duration: 6.8 min
+- Total execution time: 0.45 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01-ai-foundation | 3/3 | 22 min | 7.3 min |
+| 02-module-iassistant | 1/3 | 5 min | 5.0 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (8min), 01-02 (3min), 01-03 (11min)
-- Trend: Improving velocity (3-11 min/plan)
+- Last 5 plans: 01-01 (8min), 01-02 (3min), 01-03 (11min), 02-01 (5min)
+- Trend: Excellent velocity (3-11 min/plan)
 
 *Updated after each plan completion*
 
@@ -41,6 +42,12 @@ Progress: [███░░░░░░░] 33% (3/9 total plans across all phase
 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
+
+**Phase 02-01 (IAssistant Infrastructure):**
+- Editor instance stored in Zustand for global access — Needed by AssistantPanel for selection detection
+- 15 public prompts seeded with NULL owner_id — Shared across all users
+- Prompt templates use context variables matching context-builder.ts pattern — {keyword}, {semantic_terms}, {selected_text}, {content}, {audience}, {tone}
+- ON CONFLICT DO NOTHING in migration — Allows safe re-runs
 
 **Phase 01-02 (Prompt Executor & API):**
 - toTextStreamResponse() for raw text (not chat protocol) — Single-prompt execution, not multi-turn chat
@@ -74,10 +81,11 @@ None yet.
 
 ### Blockers/Concerns
 
-**Database Setup Required (01-03):**
+**Database Setup Required (01-03, 02-01):**
 - ⚠️ Supabase environment not configured yet
-- Migrations 003, 004, 005 ready to apply (prompts, ai_requests, prompt_context)
+- Migrations 003, 004, 005, 006 ready to apply (prompts, ai_requests, prompt_context, seed prompts)
 - Run `supabase db push` when Supabase project is linked
+- Migration 006 seeds 15 public prompts for IAssistant
 
 **API Keys Required (01-01):**
 - ✅ AI SDK packages installed
@@ -96,8 +104,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-19 14:20 — Plan 01-02 execution
-Stopped at: Completed 01-02-PLAN.md with SUMMARY (Phase 1 complete - all 3 plans done)
+Last session: 2026-03-19 15:54 — Plan 02-01 execution
+Stopped at: Completed 02-01-PLAN.md with SUMMARY (IAssistant Infrastructure)
 Resume file: None
 
-Next step: Begin Phase 2 - AI UI Components (Plans 02-01, 02-02, 02-03)
+Next step: Continue Phase 2 - Plan 02-02 (IAssistant UI), Plan 02-03 (Prompt Execution Flow)
