@@ -69,12 +69,11 @@ Plans:
   3. Outline enriched with semantic term distribution across sections
   4. User can preview generated outline before inserting into editor
   5. System warns if inserting outline would push semantic score above 100 (over-optimization risk)
-**Plans**: TBD
+**Plans**: 2 plans in 2 waves
 
 Plans:
-- [ ] 03-01: Create Plan tab UI with generate button and outline preview
-- [ ] 03-02: Build outline generation logic with SERP H2/H3 extraction
-- [ ] 03-03: Implement outline insertion with over-optimization warning
+- [ ] 03-01-PLAN.md — Database migration + outline builder + /api/ai/plan route with Claude Sonnet 4.5 (Wave 1)
+- [ ] 03-02-PLAN.md — PlanPanel rewrite with preview Dialog, editor insertion, over-optimization warning (Wave 2)
 
 ### Phase 4: Modules Intention & Meta
 **Goal**: Users can classify search intent for their keyword and generate optimized SEO title/description with character limits
@@ -134,7 +133,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 |-------|----------------|--------|-----------|
 | 1. AI Foundation | 3/3 | ✓ Complete | 2026-03-19 |
 | 2. Module IAssistant | 2/2 | ✓ Complete | 2026-03-19 |
-| 3. Module Plan | 0/3 | Not started | - |
-| 4. Modules Intention & Meta | 0/3 | Not started | - |
-| 5. Context System | 0/3 | Not started | - |
+| 3. Module Plan | 0/2 | Not started | - |
+| 4. Modules Intention & Meta | 0/2 | Not started | - |
+| 5. Context System | 0/2 | Not started | - |
 | 6. Testing & Quality | 0/3 | Not started | - |
