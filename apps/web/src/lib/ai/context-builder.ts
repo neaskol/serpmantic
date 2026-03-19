@@ -1,4 +1,4 @@
-import type { SemanticTerm, SerpAnalysis, StructuralBenchmarks } from '@/types/database'
+import type { SemanticTerm, SerpAnalysis } from '@/types/database'
 
 /**
  * Context for enriching AI prompts with SERP data and user settings

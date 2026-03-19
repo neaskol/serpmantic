@@ -80,18 +80,25 @@ export async function executePrompt(options: ExecuteOptions): Promise<ExecuteRes
   })
 
   // Execute streaming text generation
+  // Type cast needed: AI SDK v5 providers return v3 models, but streamText accepts v2|v3
+  // Note: maxTokens parameter removed in favor of model-specific settings
   const result = await streamText({
-    model,
+    model: model as unknown as Parameters<typeof streamText>[0]['model'],
     system: systemPrompt,
     prompt,
-    maxTokens,
     async onFinish({ text, usage, finishReason }) {
       // Log completion info
+      // AI SDK v5+ changed property names: inputTokens -> promptTokens, outputTokens -> completionTokens
+      const usageObj = usage as Record<string, number>
+      const promptTokens: number = (usageObj.promptTokens ?? usageObj.inputTokens ?? 0) as number
+      const completionTokens: number = (usageObj.completionTokens ?? usageObj.outputTokens ?? 0) as number
+      const totalTokens: number = (usageObj.totalTokens ?? (promptTokens + completionTokens)) as number
+
       logger.info('AI execution completed', {
         modelId,
-        promptTokens: usage.promptTokens,
-        completionTokens: usage.completionTokens,
-        totalTokens: usage.totalTokens,
+        promptTokens,
+        completionTokens,
+        totalTokens,
         finishReason,
         textLength: text.length,
       })
@@ -99,7 +106,11 @@ export async function executePrompt(options: ExecuteOptions): Promise<ExecuteRes
       // Invoke caller's onFinish callback (e.g., route handler writes to DB)
       if (onFinish) {
         try {
-          await onFinish({ text, usage, finishReason })
+          await onFinish({
+            text,
+            usage: { promptTokens, completionTokens, totalTokens },
+            finishReason
+          })
         } catch (error) {
           logger.error('Error in onFinish callback', {
             modelId,

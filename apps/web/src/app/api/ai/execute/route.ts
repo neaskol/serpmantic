@@ -7,7 +7,7 @@ import type { TaskType } from '@/lib/ai/router'
 import { buildPromptContext, buildPrompt, buildSystemMessage } from '@/lib/ai/context-builder'
 import { handleApiError, generateRequestId } from '@/lib/error-handler'
 import { logger } from '@/lib/logger'
-import type { Prompt, Guide, SerpAnalysis, SemanticTerm } from '@/types/database'
+import type { Prompt, SerpAnalysis, SemanticTerm } from '@/types/database'
 
 // CRITICAL: Without this, Next.js serverless functions timeout after 10s
 export const maxDuration = 30
@@ -21,8 +21,6 @@ const ExecuteRequestSchema = z.object({
   selectedText: z.string().optional(),
   scope: z.enum(['selection', 'document']).default('document'),
 })
-
-type ExecuteRequest = z.infer<typeof ExecuteRequestSchema>
 
 /**
  * POST /api/ai/execute
