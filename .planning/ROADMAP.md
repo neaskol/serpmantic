@@ -102,12 +102,11 @@ Plans:
   3. User can select active context for current guide from dropdown
   4. Prompts automatically inject context variables ({audience}, {brand_tone}, {sector}, {brief})
   5. IAssistant tab shows current active context name or "No context" warning
-**Plans**: TBD
+**Plans**: 2 plans in 2 waves
 
 Plans:
-- [ ] 05-01: Create context management UI (create, edit, delete)
-- [ ] 05-02: Build context selection and variable injection system
-- [ ] 05-03: Integrate context with all AI modules
+- [ ] 05-01: Database migration + CRUD API routes + Zustand context-store + types/schemas (Wave 1)
+- [ ] 05-02: Context selector + management dialog + AssistantPanel integration + execute route FK resolution (Wave 2)
 
 ### Phase 6: Testing & Quality
 **Goal**: Test coverage reaches 30-40% with unit, integration, and E2E tests for all AI modules
