@@ -44,8 +44,8 @@ export function MetaPanel() {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          meta_title: metaTitle,
-          meta_description: metaDescription,
+          metaTitle: metaTitle,
+          metaDescription: metaDescription,
         }),
       })
 
@@ -76,21 +76,31 @@ export function MetaPanel() {
         }),
       })
 
-      if (res.ok) {
-        const data = await res.json()
-        setSuggestions(data.suggestions)
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}))
+        toast.error(errorData.message || 'Erreur lors de la generation des meta tags')
+        return
       }
-    } catch {
-      // error handled silently
+
+      const data = await res.json()
+      setSuggestions(data.suggestions)
+    } catch (error) {
+      toast.error('Erreur lors de la generation des suggestions. Veuillez reessayer.')
     } finally {
       setGenerating(false)
     }
   }
 
   async function handleCopy(text: string, field: string) {
-    await navigator.clipboard.writeText(text)
-    setCopiedField(field)
-    setTimeout(() => setCopiedField(null), 2000)
+    if (!text) return
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopiedField(field)
+      toast.success('Copie !')
+      setTimeout(() => setCopiedField(null), 2000)
+    } catch {
+      toast.error('Impossible de copier dans le presse-papiers')
+    }
   }
 
   function applySuggestion(suggestion: MetaSuggestion) {
@@ -229,7 +239,7 @@ export function MetaPanel() {
         </Button>
         <Button
           onClick={handleSuggest}
-          disabled={generating || !guide}
+          disabled={generating || !guide || plainText.trim().length < 10}
           size="sm"
           variant="outline"
           className="flex-1"
@@ -242,6 +252,12 @@ export function MetaPanel() {
           Suggerer des idees
         </Button>
       </div>
+
+      {plainText.trim().length < 10 && (
+        <p className="text-[10px] text-muted-foreground text-center">
+          Redigez du contenu dans l&apos;editeur pour obtenir des suggestions de meta tags.
+        </p>
+      )}
 
       {/* AI Suggestions */}
       {suggestions && suggestions.length > 0 && (
