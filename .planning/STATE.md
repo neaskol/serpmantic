@@ -12,7 +12,7 @@ See: .planning/PROJECT.md (updated 2026-03-19)
 Phase: 1 of 6 (AI Foundation)
 Plan: 03 of 03 completed
 Status: Phase 1 complete
-Last activity: 2026-03-19 — Completed 01-03-PLAN.md (AI Data Layer)
+Last activity: 2026-03-19 — Completed 01-02-PLAN.md (Prompt Executor & Streaming API)
 
 Progress: [███░░░░░░░] 33% (3/9 total plans across all phases)
 
@@ -20,18 +20,18 @@ Progress: [███░░░░░░░] 33% (3/9 total plans across all phase
 
 **Velocity:**
 - Total plans completed: 3
-- Average duration: 10 min
-- Total execution time: 0.50 hours
+- Average duration: 7.3 min
+- Total execution time: 0.37 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 01-ai-foundation | 3/3 | 30 min | 10 min |
+| 01-ai-foundation | 3/3 | 22 min | 7.3 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (8min), 01-02 (11min), 01-03 (11min)
-- Trend: Consistent velocity (8-11 min/plan)
+- Last 5 plans: 01-01 (8min), 01-02 (3min), 01-03 (11min)
+- Trend: Improving velocity (3-11 min/plan)
 
 *Updated after each plan completion*
 
@@ -41,6 +41,13 @@ Progress: [███░░░░░░░] 33% (3/9 total plans across all phase
 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
+
+**Phase 01-02 (Prompt Executor & API):**
+- toTextStreamResponse() for raw text (not chat protocol) — Single-prompt execution, not multi-turn chat
+- Caller-injectable onFinish callback — Route handler owns DB writes, executor stays generic
+- maxDuration=30 prevents timeout — AI responses can take 15-30s
+- Supabase client captured in closure — onFinish runs async, needs access to client and user.id
+- Hard-coded pricing in executor — Current as of 2026-03, easy to update
 
 **Phase 01-03 (AI Data Layer):**
 - AiStatus lifecycle: 'idle' | 'loading' | 'streaming' | 'success' | 'error' — Full execution flow tracking
@@ -80,7 +87,8 @@ None yet.
 
 **Cost Monitoring:**
 - ✅ ai_requests table created (tracks tokens and estimated costs)
-- Ready to log all AI API requests when execution endpoint is built
+- ✅ POST /api/ai/execute endpoint logs all requests via onFinish callback
+- ✅ estimateCost() utility calculates USD cost from token usage
 
 **Prompt Quality:**
 - Initial prompt templates are hypotheses — Phase 2 should include A/B testing
@@ -88,8 +96,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-19 14:09 — Plan 01-03 execution
-Stopped at: Completed 01-03-PLAN.md with SUMMARY (Phase 1 complete)
+Last session: 2026-03-19 14:20 — Plan 01-02 execution
+Stopped at: Completed 01-02-PLAN.md with SUMMARY (Phase 1 complete - all 3 plans done)
 Resume file: None
 
-Next step: Begin Phase 2 - AI UI Components
+Next step: Begin Phase 2 - AI UI Components (Plans 02-01, 02-02, 02-03)
