@@ -116,3 +116,13 @@ When ready to add Sentry:
 4. Sentry will automatically capture errors from ErrorBoundary
 
 See: [2026-03-19-lightweight-monitoring-design.md](plans/2026-03-19-lightweight-monitoring-design.md)
+
+
+## Testing
+
+See [Testing Guide](../apps/web/docs/testing.md) for comprehensive test coverage information.
+
+- **Test Infrastructure**: Vitest + @vitejs/plugin-react
+- **Total Tests**: 40 passing + 1 skipped
+- **Coverage**: 70% (target: 80%)
+- **Critical Paths**: All security features tested (CORS, CSP, rate limiting, validation)
