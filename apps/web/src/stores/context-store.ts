@@ -17,7 +17,7 @@ interface ContextState {
   initActiveContext: (contextId: string | null) => void
 }
 
-export const useContextStore = create<ContextState>()((set, get) => ({
+export const useContextStore = create<ContextState>()((set) => ({
   contexts: [],
   activeContextId: null,
   loading: false,

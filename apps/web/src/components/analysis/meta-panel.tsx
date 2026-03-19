@@ -84,7 +84,7 @@ export function MetaPanel() {
 
       const data = await res.json()
       setSuggestions(data.suggestions)
-    } catch (error) {
+    } catch {
       toast.error('Erreur lors de la generation des suggestions. Veuillez reessayer.')
     } finally {
       setGenerating(false)

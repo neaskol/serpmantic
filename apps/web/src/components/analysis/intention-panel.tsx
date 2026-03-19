@@ -72,7 +72,7 @@ export function IntentionPanel() {
 
       const data = await res.json()
       setIntentResult(data)
-    } catch (error) {
+    } catch {
       toast.error('Erreur lors de l\'analyse des intentions. Veuillez reessayer.')
     } finally {
       setAnalyzing(false)
@@ -105,7 +105,7 @@ export function IntentionPanel() {
 
       const data = await res.json()
       setContentAnalysis(data)
-    } catch (error) {
+    } catch {
       toast.error('Erreur lors de l\'analyse du contenu. Veuillez reessayer.')
     } finally {
       setAnalyzingContent(false)
