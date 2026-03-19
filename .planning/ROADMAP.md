@@ -84,12 +84,11 @@ Plans:
   3. User enters meta title (60 char counter) and description (158 char counter) manually
   4. User clicks "Suggest ideas" and receives 2-3 AI-generated title and description options
   5. User can select generated option, copy to field, and save to guide
-**Plans**: TBD
+**Plans**: 2 plans in 1 wave
 
 Plans:
-- [ ] 04-01: Create Intention tab with intent classification and alignment analysis
-- [ ] 04-02: Create Meta tab with manual input fields and AI suggestion generator
-- [ ] 04-03: Implement meta save functionality and copy-to-clipboard
+- [ ] 04-01-PLAN.md — Intention backend API routes (classification + alignment) with JSON extractor utility (Wave 1)
+- [ ] 04-02-PLAN.md — Meta backend API route (AI generation) + MetaPanel field name fix + error handling (Wave 1)
 
 ### Phase 5: Context System
 **Goal**: Users can create reusable prompt contexts (audience, tone, sector, brief) that automatically enrich all AI prompts
@@ -135,6 +134,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 1. AI Foundation | 3/3 | ✓ Complete | 2026-03-19 |
 | 2. Module IAssistant | 0/3 | Not started | - |
 | 3. Module Plan | 0/3 | Not started | - |
-| 4. Modules Intention & Meta | 0/3 | Not started | - |
+| 4. Modules Intention & Meta | 0/2 | Not started | - |
 | 5. Context System | 0/3 | Not started | - |
 | 6. Testing & Quality | 0/3 | Not started | - |
