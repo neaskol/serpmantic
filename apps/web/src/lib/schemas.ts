@@ -28,6 +28,7 @@ export const UpdateGuideSchema = z.object({
   metaDescription: z.string().max(158).optional(),
   linkedUrl: z.string().url().optional().nullable(),
   groupId: z.string().uuid().optional().nullable(),
+  active_context_id: z.string().uuid().optional().nullable(),
 })
 
 export type UpdateGuideRequest = z.infer<typeof UpdateGuideSchema>
@@ -104,3 +105,25 @@ export const PromptContextSchema = z.object({
 })
 
 export type PromptContextInput = z.infer<typeof PromptContextSchema>
+
+// === Context System Schemas (Phase 5) ===
+
+export const CreateContextSchema = z.object({
+  name: z.string().min(1, 'Name required').max(100),
+  audience: z.string().max(200).optional().default(''),
+  tone: z.string().max(100).optional().default(''),
+  sector: z.string().max(200).optional().default(''),
+  brief: z.string().max(2000).optional().default(''),
+})
+
+export type CreateContextInput = z.infer<typeof CreateContextSchema>
+
+export const UpdateContextSchema = z.object({
+  name: z.string().min(1).max(100).optional(),
+  audience: z.string().max(200).optional(),
+  tone: z.string().max(100).optional(),
+  sector: z.string().max(200).optional(),
+  brief: z.string().max(2000).optional(),
+})
+
+export type UpdateContextInput = z.infer<typeof UpdateContextSchema>

@@ -13,6 +13,7 @@ export type Guide = {
   share_token: string | null
   score: number
   prompt_context: PromptContext | null
+  active_context_id: string | null
   created_at: string
   updated_at: string
 }
@@ -134,4 +135,16 @@ export type PromptContext = {
   tone?: string
   sector?: string
   brief?: string
+}
+
+export type PromptContextRecord = {
+  id: string
+  user_id: string
+  name: string
+  audience: string
+  tone: string
+  sector: string
+  brief: string
+  created_at: string
+  updated_at: string
 }
