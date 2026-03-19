@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { AnalyzeRequestSchema, CreateGuideSchema } from '../schemas'
+import { AnalyzeRequestSchema } from '../schemas'
 
 describe('AnalyzeRequestSchema', () => {
   it('validates correct data', () => {

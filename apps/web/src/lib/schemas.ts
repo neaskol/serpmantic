@@ -4,7 +4,7 @@ import { z } from 'zod'
 export const AnalyzeRequestSchema = z.object({
   keyword: z.string().min(1, "Keyword required").max(200, "Keyword too long"),
   language: z.enum(['fr', 'en', 'it', 'de', 'es'], {
-    errorMap: () => ({ message: "Invalid language" })
+    message: "Invalid language"
   }),
   searchEngine: z.string().url("Invalid search engine URL"),
   guideId: z.string().uuid("Invalid guide ID"),
