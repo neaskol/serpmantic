@@ -5,6 +5,7 @@ from pipeline import analyze_corpus
 import json
 from datetime import datetime
 import logging
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -21,11 +22,18 @@ def log_structured(level: str, message: str, **kwargs):
 
 app = FastAPI(title="SERPmantics NLP Service")
 
+# CORS configuration with environment-based whitelist
+ALLOWED_ORIGINS = os.getenv(
+    "ALLOWED_ORIGINS",
+    "http://localhost:3000,https://app.serpmantic.com"
+).split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=ALLOWED_ORIGINS,
+    allow_methods=["POST"],  # Only POST needed for /analyze
+    allow_headers=["Content-Type"],
+    allow_credentials=False,
 )
 
 
