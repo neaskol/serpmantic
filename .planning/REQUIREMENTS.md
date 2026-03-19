@@ -127,15 +127,15 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| AI-01 | Phase 1 | Pending |
-| AI-02 | Phase 1 | Pending |
-| AI-03 | Phase 1 | Pending |
-| AI-04 | Phase 1 | Pending |
-| AI-05 | Phase 1 | Pending |
-| AI-06 | Phase 1 | Pending |
-| AI-07 | Phase 1 | Pending |
-| AI-08 | Phase 1 | Pending |
-| AI-09 | Phase 1 | Pending |
+| AI-01 | Phase 1 | Complete |
+| AI-02 | Phase 1 | Complete |
+| AI-03 | Phase 1 | Complete |
+| AI-04 | Phase 1 | Complete |
+| AI-05 | Phase 1 | Complete |
+| AI-06 | Phase 1 | Complete |
+| AI-07 | Phase 1 | Complete |
+| AI-08 | Phase 1 | Complete |
+| AI-09 | Phase 1 | Complete |
 | PLAN-01 | Phase 3 | Pending |
 | PLAN-02 | Phase 3 | Pending |
 | PLAN-03 | Phase 3 | Pending |
