@@ -12,6 +12,7 @@ export type Guide = {
   visibility: 'private' | 'read' | 'edit'
   share_token: string | null
   score: number
+  prompt_context: PromptContext | null
   created_at: string
   updated_at: string
 }
