@@ -3,6 +3,7 @@ import { GeistSans } from "geist/font/sans";
 import "./globals.css";
 import { Geist } from "next/font/google";
 import { cn } from "@/lib/utils";
+import { Toaster } from "@/components/ui/sonner";
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
@@ -20,6 +21,7 @@ export default function RootLayout({
     <html lang="fr" className={cn("font-sans", geist.variable)}>
       <body className={GeistSans.className}>
         {children}
+        <Toaster position="bottom-right" richColors />
       </body>
     </html>
   );

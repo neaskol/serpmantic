@@ -9,6 +9,16 @@ import { useGuideStore } from '@/stores/guide-store'
 import { useEditorStore } from '@/stores/editor-store'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb'
+import Link from 'next/link'
+import { toast } from 'sonner'
 
 export default function GuideEditorPage() {
   const { id } = useParams()
@@ -33,6 +43,8 @@ export default function GuideEditorPage() {
         if (data.analysis && data.pages && data.terms) {
           setSerpData(data.analysis, data.pages, data.terms)
         }
+      } else {
+        toast.error('Impossible de charger le guide')
       }
     }
     if (id && id !== 'test') {
@@ -47,11 +59,20 @@ export default function GuideEditorPage() {
 
     if (saveRef.current) clearTimeout(saveRef.current)
     saveRef.current = setTimeout(async () => {
-      await fetch(`/api/guides/${guide.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content, score }),
-      })
+      try {
+        const res = await fetch(`/api/guides/${guide.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content, score }),
+        })
+        if (res.ok) {
+          toast.success('Guide sauvegarde', { duration: 2000 })
+        } else {
+          toast.error('Erreur lors de la sauvegarde')
+        }
+      } catch {
+        toast.error('Erreur reseau lors de la sauvegarde')
+      }
     }, 3000)
 
     return () => {
@@ -63,24 +84,29 @@ export default function GuideEditorPage() {
   async function handleAnalyze() {
     if (!guide) return
     setAnalyzing(true)
-    try {
-      const res = await fetch('/api/serp/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          keyword: guide.keyword,
-          language: guide.language,
-          searchEngine: guide.search_engine,
-          guideId: guide.id,
-        }),
-      })
-      if (res.ok) {
+    toast.promise(
+      (async () => {
+        const res = await fetch('/api/serp/analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            keyword: guide.keyword,
+            language: guide.language,
+            searchEngine: guide.search_engine,
+            guideId: guide.id,
+          }),
+        })
+        if (!res.ok) throw new Error('Analyse echouee')
         const data = await res.json()
         setSerpData(data.analysis, data.pages, data.terms)
+        return data
+      })().finally(() => setAnalyzing(false)),
+      {
+        loading: 'Analyse SERP en cours...',
+        success: 'Analyse terminee !',
+        error: 'Erreur lors de l\'analyse SERP',
       }
-    } finally {
-      setAnalyzing(false)
-    }
+    )
   }
 
   return (
@@ -88,10 +114,20 @@ export default function GuideEditorPage() {
       {/* Header */}
       <header className="flex items-center justify-between px-4 py-2 border-b bg-white">
         <div className="flex items-center gap-3">
-          <h1 className="font-bold text-lg">SERPmantics</h1>
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbLink render={<Link href="/dashboard" />}>Dashboard</BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage>{guide?.keyword ?? 'Guide'}</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
           {guide && (
             <Badge variant="outline" className="text-sm">
-              {guide.keyword}
+              {guide.language.toUpperCase()}
             </Badge>
           )}
           {guide && (

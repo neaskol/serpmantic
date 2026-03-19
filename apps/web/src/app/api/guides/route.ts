@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { CreateGuideSchema, formatZodError } from '@/lib/schemas'
+import { ZodError } from 'zod'
 
 export async function GET() {
   const supabase = await createClient()
@@ -17,25 +19,40 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { keyword, language, searchEngine } = await request.json()
+    // Validate request body with Zod
+    const body = await request.json()
+    const validatedData = CreateGuideSchema.parse(body)
 
-  if (!keyword) return NextResponse.json({ error: 'keyword is required' }, { status: 400 })
+    const { keyword, language, searchEngine } = validatedData
 
-  const { data, error } = await supabase
-    .from('guides')
-    .insert({
-      user_id: user.id,
-      keyword,
-      language: language || 'fr',
-      search_engine: searchEngine || 'google.fr',
-    })
-    .select()
-    .single()
+    const { data, error } = await supabase
+      .from('guides')
+      .insert({
+        user_id: user.id,
+        keyword,
+        language,
+        search_engine: searchEngine,
+      })
+      .select()
+      .single()
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json(data, { status: 201 })
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json(data, { status: 201 })
+  } catch (error) {
+    if (error instanceof ZodError) {
+      return NextResponse.json(
+        {
+          error: 'Validation failed',
+          details: formatZodError(error)
+        },
+        { status: 400 }
+      )
+    }
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
 }

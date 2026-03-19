@@ -1,14 +1,51 @@
 'use client'
 
+import { useState } from 'react'
 import { useGuideStore } from '@/stores/guide-store'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Search } from 'lucide-react'
 
-export function SemanticTermsList() {
+function TermSkeleton() {
+  return (
+    <div className="flex items-center justify-between p-2 border rounded">
+      <Skeleton className="h-4 w-32" />
+      <div className="flex items-center gap-2">
+        <Skeleton className="h-4 w-16" />
+        <Skeleton className="h-5 w-10 rounded-full" />
+      </div>
+    </div>
+  )
+}
+
+export function SemanticTermsList({ loading = false }: { loading?: boolean }) {
   const termStatuses = useGuideStore((s) => s.termStatuses)
   const filter = useGuideStore((s) => s.termFilter)
   const setFilter = useGuideStore((s) => s.setTermFilter)
+  const [search, setSearch] = useState('')
+
+  if (loading) {
+    return (
+      <div className="space-y-2">
+        <div className="px-4 pt-3">
+          <Skeleton className="h-4 w-48" />
+        </div>
+        <div className="flex gap-1 px-4">
+          <Skeleton className="h-8 w-16 rounded" />
+          <Skeleton className="h-8 w-20 rounded" />
+          <Skeleton className="h-8 w-24 rounded" />
+        </div>
+        <div className="space-y-1 px-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <TermSkeleton key={i} />
+          ))}
+        </div>
+      </div>
+    )
+  }
 
   const scorableTerms = termStatuses.filter(ts => !ts.term.is_to_avoid)
 
@@ -16,6 +53,9 @@ export function SemanticTermsList() {
     if (filter === 'missing') return ts.status === 'missing'
     if (filter === 'excess') return ts.status === 'excess'
     return true
+  }).filter(ts => {
+    if (!search.trim()) return true
+    return ts.term.display_term.toLowerCase().includes(search.toLowerCase())
   })
 
   return (
@@ -36,6 +76,18 @@ export function SemanticTermsList() {
             {f === 'all' ? 'Toutes' : f === 'missing' ? 'A ajouter' : 'A supprimer'}
           </Button>
         ))}
+      </div>
+
+      <div className="px-4">
+        <div className="relative">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Rechercher un terme..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9 h-9 text-sm"
+          />
+        </div>
       </div>
 
       <ScrollArea className="h-[400px]">

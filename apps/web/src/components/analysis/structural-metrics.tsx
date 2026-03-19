@@ -2,6 +2,7 @@
 
 import { useGuideStore } from '@/stores/guide-store'
 import { Badge } from '@/components/ui/badge'
+import { Skeleton } from '@/components/ui/skeleton'
 
 const METRIC_LABELS: Record<string, string> = {
   words: 'Mots',
@@ -14,9 +15,37 @@ const METRIC_LABELS: Record<string, string> = {
   lists: 'Listes',
 }
 
-export function StructuralMetrics() {
+function MetricSkeleton() {
+  return (
+    <div className="flex items-center justify-between px-4 py-2">
+      <Skeleton className="h-4 w-20" />
+      <div className="flex items-center gap-2">
+        <Skeleton className="h-4 w-8" />
+        <Skeleton className="h-4 w-16" />
+        <Skeleton className="h-5 w-10 rounded-full" />
+      </div>
+    </div>
+  )
+}
+
+export function StructuralMetrics({ loading = false }: { loading?: boolean }) {
   const metrics = useGuideStore((s) => s.structuralMetrics)
   const benchmarks = useGuideStore((s) => s.serpAnalysis?.structural_benchmarks)
+
+  if (loading) {
+    return (
+      <div className="space-y-1">
+        <div className="px-4 pt-3">
+          <Skeleton className="h-4 w-40" />
+        </div>
+        <div className="divide-y">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <MetricSkeleton key={i} />
+          ))}
+        </div>
+      </div>
+    )
+  }
 
   if (!benchmarks) {
     return <p className="text-sm text-muted-foreground p-4">Lancez une analyse SERP pour voir les metriques.</p>

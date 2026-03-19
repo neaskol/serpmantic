@@ -4,17 +4,18 @@ import { crawlPage, type CrawledPage } from '@/lib/crawler'
 import { createClient } from '@/lib/supabase/server'
 import { calculateScore } from '@/lib/scoring'
 import type { SemanticTerm } from '@/types/database'
+import { AnalyzeRequestSchema, formatZodError } from '@/lib/schemas'
+import { ZodError } from 'zod'
 
 export async function POST(request: NextRequest) {
   try {
-    const { keyword, language, searchEngine, guideId } = await request.json()
+    // Validate request body with Zod
+    const body = await request.json()
+    const validatedData = AnalyzeRequestSchema.parse(body)
 
-    if (!keyword || !guideId) {
-      return NextResponse.json({ error: 'keyword and guideId are required' }, { status: 400 })
-    }
-
-    const lang = language || 'fr'
-    const engine = searchEngine || 'google.fr'
+    const { keyword, language, searchEngine, guideId } = validatedData
+    const lang = language
+    const engine = searchEngine
 
     // 1. Fetch SERP results
     const serpResults = await fetchSerpResults(keyword, lang, engine)
@@ -193,6 +194,15 @@ export async function POST(request: NextRequest) {
       terms: savedTerms,
     })
   } catch (error) {
+    if (error instanceof ZodError) {
+      return NextResponse.json(
+        {
+          error: 'Validation failed',
+          details: formatZodError(error)
+        },
+        { status: 400 }
+      )
+    }
     console.error('SERP analysis error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }

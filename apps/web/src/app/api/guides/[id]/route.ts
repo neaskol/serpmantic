@@ -1,62 +1,69 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { UpdateGuideSchema, formatZodError } from '@/lib/schemas'
+import { ZodError } from 'zod'
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const supabase = await createClient()
 
-  const { data: guide, error } = await supabase
+  // Optimized: fetch guide with all related data in one query
+  const { data, error } = await supabase
     .from('guides')
-    .select('*')
+    .select(`
+      *,
+      serp_analyses (
+        *,
+        serp_pages (*),
+        semantic_terms (*)
+      )
+    `)
     .eq('id', id)
     .single()
 
-  if (error || !guide) return NextResponse.json({ error: 'Guide not found' }, { status: 404 })
-
-  // Also fetch SERP analysis, pages, and terms
-  const { data: analysis } = await supabase
-    .from('serp_analyses')
-    .select('*')
-    .eq('guide_id', id)
-    .single()
-
-  let pages = null
-  let terms = null
-
-  if (analysis) {
-    const { data: p } = await supabase
-      .from('serp_pages')
-      .select('*')
-      .eq('serp_analysis_id', analysis.id)
-      .order('position')
-
-    const { data: t } = await supabase
-      .from('semantic_terms')
-      .select('*')
-      .eq('serp_analysis_id', analysis.id)
-      .order('importance', { ascending: false })
-
-    pages = p
-    terms = t
+  if (error || !data) {
+    return NextResponse.json({ error: 'Guide not found' }, { status: 404 })
   }
+
+  // Transform nested structure for backward compatibility
+  const guide = data
+  const analysis = data.serp_analyses?.[0] || null
+  const pages = analysis?.serp_pages || []
+  const terms = analysis?.semantic_terms || []
 
   return NextResponse.json({ guide, analysis, pages, terms })
 }
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params
-  const supabase = await createClient()
-  const body = await request.json()
+  try {
+    const { id } = await params
+    const supabase = await createClient()
 
-  const { data, error } = await supabase
-    .from('guides')
-    .update({ ...body, updated_at: new Date().toISOString() })
-    .eq('id', id)
-    .select()
-    .single()
+    // Validate request body with Zod
+    const body = await request.json()
+    const validatedData = UpdateGuideSchema.parse(body)
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json(data)
+    const { data, error } = await supabase
+      .from('guides')
+      .update({ ...validatedData, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json(data)
+  } catch (error) {
+    if (error instanceof ZodError) {
+      return NextResponse.json(
+        {
+          error: 'Validation failed',
+          details: formatZodError(error)
+        },
+        { status: 400 }
+      )
+    }
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
 }
 
 export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
