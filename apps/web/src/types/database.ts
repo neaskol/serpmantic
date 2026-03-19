@@ -41,6 +41,12 @@ export type StructuralBenchmarks = {
   lists: { min: number; max: number }
 }
 
+export type ExtractedHeading = {
+  level: 2 | 3
+  text: string
+  position: number
+}
+
 export type SerpPage = {
   id: string
   serp_analysis_id: string
@@ -51,6 +57,7 @@ export type SerpPage = {
   metrics: StructuralMetrics
   term_occurrences: Record<string, number>
   position: number
+  headings: ExtractedHeading[]
 }
 
 export type StructuralMetrics = {
@@ -147,4 +154,12 @@ export type PromptContextRecord = {
   brief: string
   created_at: string
   updated_at: string
+}
+
+// === Plan Module Types ===
+
+export type OutlineSection = {
+  level: 'h2' | 'h3'
+  title: string
+  keywords: string[]
 }
