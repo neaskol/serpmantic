@@ -2,6 +2,9 @@ import spacy
 from sklearn.feature_extraction.text import TfidfVectorizer
 import numpy as np
 from languages import get_model_name
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Cache loaded models
 _models: dict[str, spacy.Language] = {}
@@ -35,18 +38,39 @@ def analyze_corpus(texts: list[str], language: str) -> dict:
     Analyze a corpus of SERP page texts.
     Returns semantic terms with occurrence ranges and terms to avoid.
     """
+    # Validate inputs
     if not texts:
+        logger.warning("Empty corpus provided")
         return {"terms": [], "terms_to_avoid": []}
 
-    nlp = get_nlp(language)
+    if language not in ["fr", "en", "it", "de", "es"]:
+        raise ValueError(f"Unsupported language: {language}")
+
+    try:
+        nlp = get_nlp(language)
+    except Exception as e:
+        logger.error(f"Failed to load spaCy model for {language}: {e}")
+        raise ValueError(f"Language model not available: {language}")
 
     # Lemmatize all texts
     lemmatized_texts = []
     all_tokens_per_doc = []
-    for text in texts:
-        tokens = lemmatize_text(text, language)
-        lemmatized_texts.append(" ".join(tokens))
-        all_tokens_per_doc.append(tokens)
+
+    for i, text in enumerate(texts):
+        try:
+            tokens = lemmatize_text(text, language)
+            if not tokens:
+                logger.warning(f"Document {i} produced no tokens")
+                continue
+            lemmatized_texts.append(" ".join(tokens))
+            all_tokens_per_doc.append(tokens)
+        except Exception as e:
+            logger.error(f"Failed to lemmatize document {i}: {e}")
+            continue
+
+    if len(lemmatized_texts) < 2:
+        logger.warning("Not enough valid documents for TF-IDF analysis")
+        return {"terms": [], "terms_to_avoid": []}
 
     # TF-IDF to find significant terms
     vectorizer = TfidfVectorizer(
