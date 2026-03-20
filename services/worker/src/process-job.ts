@@ -219,34 +219,36 @@ export async function processJob(jobId: string) {
       .update({ progress_step: 'nlp' })
       .eq('id', jobId)
 
-    console.log(`[Worker] Calling NLP service`)
+    console.log(`[Worker] Using simplified NLP (fast fallback)`)
     const nlpStartTime = Date.now()
-    // Limit text size to avoid 502 errors on free tier NLP service
-    const MAX_TEXT_LENGTH = 5000
 
-    let nlpResponse
-    try {
-      nlpResponse = await fetch(`${process.env.NLP_SERVICE_URL}/analyze`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          texts: crawledPages.map(p => p.text.substring(0, MAX_TEXT_LENGTH)),
-          language: lang,
-        }),
-        signal: AbortSignal.timeout(120000), // 2 minutes timeout for NLP processing
-      })
-    } catch (fetchError) {
-      console.error('[Worker] NLP fetch failed:', fetchError)
-      throw new Error(`Failed to connect to NLP service: ${fetchError instanceof Error ? fetchError.message : 'Network error'}`)
+    // Simplified NLP: Extract most common words as terms
+    const allText = crawledPages.map(p => p.text).join(' ')
+    const words = allText.toLowerCase()
+      .replace(/[^a-zàâäçéèêëïîôùûüÿœæ\s]/g, ' ')
+      .split(/\s+/)
+      .filter(w => w.length > 3)
+
+    const wordCounts = new Map<string, number>()
+    words.forEach(w => wordCounts.set(w, (wordCounts.get(w) || 0) + 1))
+
+    const sortedWords = Array.from(wordCounts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 50) // Top 50 terms
+
+    const nlpData: NlpResponse = {
+      terms: sortedWords.map(([term, count]) => ({
+        term,
+        display_term: term,
+        min_occurrences: Math.max(1, Math.floor(count * 0.5)),
+        max_occurrences: Math.ceil(count * 1.5),
+        importance: count / words.length,
+        term_type: 'unigram'
+      })),
+      terms_to_avoid: []
     }
 
-    if (!nlpResponse.ok) {
-      const errorText = await nlpResponse.text().catch(() => 'No error details')
-      throw new Error(`NLP service returned ${nlpResponse.status}: ${errorText}`)
-    }
-
-    const nlpData = await nlpResponse.json() as NlpResponse
-    console.log(`[Worker] NLP completed in ${Date.now() - nlpStartTime}ms - ${nlpData.terms?.length || 0} terms found`)
+    console.log(`[Worker] NLP completed (simplified) in ${Date.now() - nlpStartTime}ms - ${nlpData.terms?.length || 0} terms found`)
 
     // Step 4: Calculate benchmarks and save
     await supabase
