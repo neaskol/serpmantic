@@ -1,45 +1,58 @@
 # SERPmantics NLP Service
 
-Service d'analyse sémantique pour SERPmantics.
+Service d'analyse sémantique pour SERPmantics utilisant **TextRazor API**.
 
-## Version simplifiée (MVP)
+## Version TextRazor (Production)
 
-Cette version utilise du traitement de texte basique sans ML pour faciliter le déploiement gratuit sur Render.com.
+Cette version utilise l'API TextRazor pour une analyse NLP professionnelle avec lemmatisation multilingue.
 
 ### Fonctionnalités
 
-- ✅ Tokenisation et normalisation de texte
+- ✅ **Lemmatisation avancée** via TextRazor (ex: "délégataires" → "délégatair")
+- ✅ Extraction d'entités nommées (personnes, organisations, lieux)
+- ✅ Analyse de topics sémantiques
+- ✅ Part-of-speech tagging (NOUN, VERB, ADJ, ADV, PROPN)
 - ✅ Extraction de n-grammes (uni/bi/trigrams)
-- ✅ Calcul de fréquences et percentiles
+- ✅ Calcul de fréquences et percentiles (P10-P90)
 - ✅ Identification de termes significatifs
 - ✅ Détection de termes à éviter
 - ✅ Support multilingue (FR, EN, IT, DE, ES)
 
-### Différences avec la version ML complète
+### Avantages vs version basique
 
-**Version actuelle (simplifié)** :
-- Pas de lemmatisation (ex: "courir", "cours", "courant" sont traités séparément)
-- Stopwords fixes (pas de modèle linguistique)
-- TF-IDF simplifié basé sur fréquences brutes
+**TextRazor (version actuelle)** :
+- ✅ Lemmatisation complète ("délégataires" = "délégataire" = "délégué")
+- ✅ Reconnaissance d'entités ("CEE" = organisation)
+- ✅ Analyse sémantique avancée
+- ✅ Pas de modèle ML à héberger (API cloud)
 
-**Version ML complète** (nécessite plus de ressources) :
-- spaCy pour lemmatisation (ex: "courir" = "cours" = "courant")
-- Modèles linguistiques avancés
-- TF-IDF avec scikit-learn
+**Version basique (ancienne)** :
+- ❌ Pas de lemmatisation ("courir" ≠ "cours" ≠ "courant")
+- ❌ Stopwords fixes
+- ❌ TF-IDF simplifié
+
+### Configuration
+
+Créer un fichier `.env` :
+
+```env
+TEXTRAZOR_API_KEY=votre-clé-api-textrazor
+PORT=8080
+```
 
 ### API
 
 **Endpoints** :
 - `GET /health` - Health check basique
 - `GET /health/ready` - Readiness check
-- `POST /analyze` - Analyse sémantique
+- `POST /analyze` - Analyse sémantique avec TextRazor
 
 **Exemple de requête** :
 ```json
 {
   "texts": [
-    "Premier texte à analyser...",
-    "Second texte à analyser..."
+    "Les délégataires CEE sont des acteurs essentiels...",
+    "Le rôle du délégataire CEE consiste à collecter..."
   ],
   "language": "fr"
 }
@@ -50,44 +63,78 @@ Cette version utilise du traitement de texte basique sans ML pour faciliter le d
 {
   "terms": [
     {
-      "term": "seo",
-      "display_term": "seo",
-      "min_occurrences": 2,
-      "max_occurrences": 5,
-      "importance": 8.5,
+      "term": "délégatair",
+      "display_term": "délégatair",
+      "min_occurrences": 3,
+      "max_occurrences": 4,
+      "importance": 36.7,
       "term_type": "unigram"
+    },
+    {
+      "term": "économ énerg",
+      "display_term": "économ énerg",
+      "min_occurrences": 1,
+      "max_occurrences": 3,
+      "importance": 16.7,
+      "term_type": "bigram"
     }
   ],
-  "terms_to_avoid": ["cookie", "menu"]
+  "terms_to_avoid": ["cookie", "menu", "footer"]
 }
 ```
 
-### Déploiement sur Render
+### Installation locale
 
-1. Root Directory: `services/nlp`
-2. Build Command: `pip install -r requirements.txt`
-3. Start Command: `uvicorn main:app --host 0.0.0.0 --port $PORT`
-
-### Migration vers version ML (future)
-
-Pour activer la version ML complète :
-
-1. Ajouter dans requirements.txt :
-```
-spacy==3.7.5
-scikit-learn==1.5.0
-numpy>=1.26.0,<2.0.0
-```
-
-2. Télécharger les modèles spaCy :
 ```bash
-python -m spacy download fr_core_news_sm
-python -m spacy download en_core_web_sm
+# Créer un environnement virtuel
+python3 -m venv .venv
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
+
+# Installer les dépendances
+pip install -r requirements.txt
+
+# Créer le fichier .env avec votre clé TextRazor
+echo "TEXTRAZOR_API_KEY=votre-clé" > .env
+
+# Tester l'intégration
+python test_textrazor.py
+
+# Lancer le serveur
+uvicorn main:app --reload --port 8080
 ```
 
-3. Remplacer `pipeline.py` par la version ML
+### Déploiement sur Render.com
 
-⚠️ **Attention** : La version ML nécessite :
-- Plus de RAM (512 MB minimum → 1 GB recommandé)
-- Plus d'espace disque (100 MB → 500 MB)
-- Temps de démarrage plus long (5s → 30s)
+1. **Root Directory**: `services/nlp`
+2. **Build Command**: `pip install -r requirements.txt`
+3. **Start Command**: `uvicorn main:app --host 0.0.0.0 --port $PORT`
+4. **Environment Variables**:
+   - `TEXTRAZOR_API_KEY` = votre clé API TextRazor
+   - `PORT` = $PORT (défini automatiquement par Render)
+
+### Limites TextRazor
+
+- **Free tier** : 500 requêtes/jour
+- **Limite de taille** : 200 KB de texte par requête
+- **Requêtes concurrentes** : 2 max (free tier)
+
+### Monitoring
+
+Le service log automatiquement :
+- Nombre de documents analysés
+- Nombre de termes extraits
+- Temps de traitement
+- Erreurs TextRazor
+
+Consultez les logs avec :
+```bash
+# Render.com
+Logs > Services > serpmantic-nlp
+
+# Local
+uvicorn main:app --log-level debug
+```
+
+### Fallback en cas d'échec
+
+Si TextRazor est indisponible, le service utilise automatiquement le pipeline basique (`pipeline.py`) comme fallback.
