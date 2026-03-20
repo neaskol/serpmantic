@@ -68,7 +68,16 @@ export function SerpAnalysisProgress({ currentStep, error, onRetry }: AnalysisPr
     return `${mins}m ${secs}s`
   }
 
-  if (currentStep === 'idle') return null
+  if (currentStep === 'idle') {
+    return (
+      <div className="space-y-4 p-4 border rounded-lg bg-white">
+        <div className="flex items-center gap-3">
+          <Loader2 className="h-5 w-5 text-blue-600 animate-spin" />
+          <span className="text-sm font-medium">Préparation de l'analyse SERP...</span>
+        </div>
+      </div>
+    )
+  }
 
   if (currentStep === 'complete') {
     return (
