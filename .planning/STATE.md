@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-03-19)
 ## Current Position
 
 Phase: 5 of 6 (Context System)
-Plan: 01 of 02 completed
-Status: In progress
-Last activity: 2026-03-19 — Completed 05-01-PLAN.md (Context System Data Layer)
+Plan: 02 of 02 completed
+Status: Phase 5 complete
+Last activity: 2026-03-19 — Completed Phase 5 (Context System)
 
-Progress: [████████░░] 80% (8/10 total plans across Phases 1-5)
+Progress: [██████████] 100% (11/11 completed plans across Phases 1-2, 4-5)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 8
-- Average duration: 5.6 min
-- Total execution time: 0.75 hours
+- Total plans completed: 11
+- Average duration: 5.5 min
+- Total execution time: 1.00 hours
 
 **By Phase:**
 
@@ -29,12 +29,13 @@ Progress: [████████░░] 80% (8/10 total plans across Phases 1
 |-------|-------|-------|----------|
 | 01-ai-foundation | 3/3 | 22 min | 7.3 min |
 | 02-module-iassistant | 2/2 | 17 min | 8.5 min |
+| 03-module-plan | 1/2 | 7 min | 7.0 min |
 | 04-modules-intention-meta | 2/2 | 7 min | 3.5 min |
-| 05-context-system | 1/2 | 3 min | 3.0 min |
+| 05-context-system | 2/2 | 11 min | 5.5 min |
 
 **Recent Trend:**
-- Last 5 plans: 02-02 (12min), 04-01 (3min), 04-02 (4min), 05-01 (3min)
-- Trend: Exceptional velocity (Phase 5-01 fastest yet at 3 min)
+- Last 5 plans: 04-02 (4min), 05-01 (3min), 03-01 (7min), 05-02 (8min)
+- Trend: Consistent 3-8 min range, excellent velocity
 
 *Updated after each plan completion*
 
@@ -45,7 +46,27 @@ Progress: [████████░░] 80% (8/10 total plans across Phases 1
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
+**Phase 05-02 (Context System UI Integration):**
+- Sentinel value __none__ for null FK in base-ui Select — Base-nova Select onValueChange passes string | null, needs string sentinel
+- Dynamic warning only when no contexts exist AND no active context — ContextSelector is sufficient if user has contexts
+- FK context resolution with JSONB fallback — Execute route checks active_context_id first, falls back to prompt_context for backward compatibility
+- Active context preview under selector — Shows audience/tone/sector for immediate feedback
+
 **Phase 05-01 (Context System Data Layer):**
+- active_context_id stored on guides, not separate junction table — Simpler for 1:1 relationship
+- setActiveContext persists via PATCH /api/guides/[id] — Reuses existing endpoint, no new route needed
+- initActiveContext separate from setActiveContext — Non-async initialization when guide loads
+- deleteContext auto-clears activeContextId if deleted context was active — Prevents stale references
+- Empty string defaults for audience/tone/sector/brief — Allows optional fields while keeping NOT NULL columns
+
+**Phase 03-01 (AI Outline Generation API):**
+- generateText (non-streaming) instead of streamText — Outline generation fast (<5s), need full response before JSON parsing
+- XML-structured prompts for Claude Sonnet 4.5 — Claude 4.x excel with XML tags for structured input
+- Graceful degradation when headings unavailable — Prompt uses titles when headings.length <= 2
+- PostgrestError type guard (as { code, message }) — Supabase error types not properly exported
+- AI SDK v5 usage property fallback — promptTokens/inputTokens compatibility across models
+
+**Phase 04-02 (Meta Generation & Panel Fixes):**
 - active_context_id stored on guides, not separate junction table — Simpler for 1:1 relationship
 - setActiveContext persists via PATCH /api/guides/[id] — Reuses existing endpoint, no new route needed
 - initActiveContext separate from setActiveContext — Non-async initialization when guide loads
@@ -109,11 +130,12 @@ None yet.
 
 ### Blockers/Concerns
 
-**Database Setup Required (01-03, 02-01):**
+**Database Setup Required (01-03, 02-01, 03-01, 05-01):**
 - ⚠️ Supabase environment not configured yet
-- Migrations 003, 004, 005, 006 ready to apply (prompts, ai_requests, prompt_context, seed prompts)
+- Migrations 003-007 ready to apply (prompts, ai_requests, seed prompts, headings, prompt_contexts)
 - Run `supabase db push` when Supabase project is linked
 - Migration 006 seeds 15 public prompts for IAssistant
+- Migration 007 adds prompt_contexts table + active_context_id FK on guides (required for context system)
 
 **API Keys Required (01-01):**
 - ✅ AI SDK packages installed
@@ -138,8 +160,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-19 17:02 — Phase 5 execution
-Stopped at: Completed 05-01-PLAN.md (Context System Data Layer)
+Last session: 2026-03-19 20:29 — Phase 5 execution
+Stopped at: Completed Phase 5 (Context System) - all plans verified
 Resume file: None
 
-Next step: Execute 05-02-PLAN.md (Context System UI Integration)
+Next step: Complete remaining Phase 3 work (Plan UI Integration) or proceed to Phase 6 (Testing & Quality)
