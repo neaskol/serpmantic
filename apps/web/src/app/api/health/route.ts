@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient as createSupabaseClient } from '@/lib/supabase/server'
-import { redis } from '@/lib/redis'
+import { getRedisClient } from '@/lib/redis'
 
 export async function GET() {
   const startTime = Date.now()
@@ -12,11 +12,18 @@ export async function GET() {
   }
 
   try {
-    const redisStart = Date.now()
-    await redis.ping()
-    health.redis = {
-      status: 'connected',
-      latency: Date.now() - redisStart,
+    const redis = getRedisClient()
+    if (redis) {
+      const redisStart = Date.now()
+      await redis.ping()
+      health.redis = {
+        status: 'connected',
+        latency: Date.now() - redisStart,
+      }
+    } else {
+      health.redis = {
+        status: 'disabled',
+      }
     }
   } catch (error) {
     health.redis = {
