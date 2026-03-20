@@ -38,7 +38,11 @@ export function useNetworkErrorToast() {
 
         return response
       } catch (error) {
-        const url = typeof args[0] === 'string' ? args[0] : args[0]?.url || 'inconnue'
+        const url = typeof args[0] === 'string'
+          ? args[0]
+          : args[0] instanceof Request
+            ? args[0].url
+            : 'inconnue'
 
         toast.error('Erreur réseau', {
           description: `Impossible de joindre le serveur (${url})`,
