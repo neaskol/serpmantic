@@ -5,6 +5,7 @@ import { useContextStore } from '@/stores/context-store'
 import { useGuideStore } from '@/stores/guide-store'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Settings } from 'lucide-react'
 import { ContextDialog } from './context-dialog'
 
@@ -40,6 +41,18 @@ export function ContextSelector() {
   }
 
   const activeContext = contexts.find((c) => c.id === activeContextId)
+
+  // Show skeleton during initial load only
+  if (loading && contexts.length === 0) {
+    return (
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-8 flex-1" />
+          <Skeleton className="size-7" />
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-2">

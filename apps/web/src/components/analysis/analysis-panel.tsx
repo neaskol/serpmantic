@@ -3,6 +3,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useGuideStore } from '@/stores/guide-store'
+import { ErrorBoundary } from '@/components/error-boundary'
 import { ScoreDisplay } from './score-display'
 import { StructuralMetrics } from './structural-metrics'
 import { SemanticTermsList } from './semantic-terms-list'
@@ -19,6 +20,13 @@ export function AnalysisPanel() {
   const activeTab = useGuideStore((s) => s.activeTab)
   const setActiveTab = useGuideStore((s) => s.setActiveTab)
 
+  const panelFallback = (
+    <div className="p-4 text-center space-y-2">
+      <p className="text-sm text-destructive">Une erreur est survenue dans ce module.</p>
+      <p className="text-xs text-muted-foreground">Rechargez la page pour reessayer.</p>
+    </div>
+  )
+
   return (
     <div className="h-full flex flex-col border-l">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col h-full">
@@ -34,49 +42,63 @@ export function AnalysisPanel() {
 
         <TabsContent value="optimization" className="flex-1 overflow-hidden mt-0">
           <ScrollArea className="h-full">
-            <div className="p-4 space-y-4">
-              <ScoreDisplay />
-              <StructuralMetrics />
-              <SemanticTermsList />
-              <AvoidTermsList />
-              <SerpBenchmark />
-            </div>
+            <ErrorBoundary fallback={panelFallback}>
+              <div className="p-4 space-y-4">
+                <ScoreDisplay />
+                <StructuralMetrics />
+                <SemanticTermsList />
+                <AvoidTermsList />
+                <SerpBenchmark />
+              </div>
+            </ErrorBoundary>
           </ScrollArea>
         </TabsContent>
 
         <TabsContent value="assistant" className="flex-1 overflow-hidden mt-0">
           <ScrollArea className="h-full">
-            <AssistantPanel />
+            <ErrorBoundary fallback={panelFallback}>
+              <AssistantPanel />
+            </ErrorBoundary>
           </ScrollArea>
         </TabsContent>
 
         <TabsContent value="plan" className="flex-1 overflow-hidden mt-0">
           <ScrollArea className="h-full">
-            <PlanPanel />
+            <ErrorBoundary fallback={panelFallback}>
+              <PlanPanel />
+            </ErrorBoundary>
           </ScrollArea>
         </TabsContent>
 
         <TabsContent value="intention" className="flex-1 overflow-hidden mt-0">
           <ScrollArea className="h-full">
-            <IntentionPanel />
+            <ErrorBoundary fallback={panelFallback}>
+              <IntentionPanel />
+            </ErrorBoundary>
           </ScrollArea>
         </TabsContent>
 
         <TabsContent value="links" className="flex-1 overflow-hidden mt-0">
           <ScrollArea className="h-full">
-            <LinksPanel />
+            <ErrorBoundary fallback={panelFallback}>
+              <LinksPanel />
+            </ErrorBoundary>
           </ScrollArea>
         </TabsContent>
 
         <TabsContent value="meta" className="flex-1 overflow-hidden mt-0">
           <ScrollArea className="h-full">
-            <MetaPanel />
+            <ErrorBoundary fallback={panelFallback}>
+              <MetaPanel />
+            </ErrorBoundary>
           </ScrollArea>
         </TabsContent>
 
         <TabsContent value="config" className="flex-1 overflow-hidden mt-0">
           <ScrollArea className="h-full">
-            <ConfigPanel />
+            <ErrorBoundary fallback={panelFallback}>
+              <ConfigPanel />
+            </ErrorBoundary>
           </ScrollArea>
         </TabsContent>
       </Tabs>
