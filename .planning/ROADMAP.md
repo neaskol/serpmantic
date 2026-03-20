@@ -72,8 +72,10 @@ Plans:
 **Plans**: 2 plans in 2 waves
 
 Plans:
-- [ ] 03-01-PLAN.md — Database migration + outline builder + /api/ai/plan route with Claude Sonnet 4.5 (Wave 1)
-- [ ] 03-02-PLAN.md — PlanPanel rewrite with preview Dialog, editor insertion, over-optimization warning (Wave 2)
+- [x] 03-01-PLAN.md — Database migration + outline builder + /api/ai/plan route with Claude Sonnet 4.5 (Wave 1)
+- [x] 03-02-PLAN.md — PlanPanel rewrite with preview Dialog, editor insertion, over-optimization warning (Wave 2)
+
+**Completed**: 2026-03-20
 
 ### Phase 4: Modules Intention & Meta
 **Goal**: Users can classify search intent for their keyword and generate optimized SEO title/description with character limits
