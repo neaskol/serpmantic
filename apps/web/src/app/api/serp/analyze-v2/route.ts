@@ -75,16 +75,17 @@ export async function POST(request: NextRequest) {
       requestId,
     })
 
-    // 4. Trigger background processing (fire-and-forget)
-    // Using fetch with no await to trigger processing without blocking
-    const baseUrl = request.nextUrl.origin
-    fetch(`${baseUrl}/api/serp/process-job`, {
+    // 4. Trigger background processing on external worker (fire-and-forget)
+    // Using Render.com worker - no timeout limits!
+    const workerUrl = process.env.WORKER_SERVICE_URL || 'https://serpmantics-worker.onrender.com'
+    fetch(`${workerUrl}/process-serp-job`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ jobId: job.id }),
     }).catch(error => {
-      logger.error('Failed to trigger background job', {
+      logger.error('Failed to trigger external worker', {
         jobId: job.id,
+        workerUrl,
         error: error instanceof Error ? error.message : String(error),
       })
     })
