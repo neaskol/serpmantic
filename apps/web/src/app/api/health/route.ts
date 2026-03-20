@@ -1,123 +1,100 @@
-import { NextResponse } from 'next/server';
-import { checkRedisHealth, getCacheStats } from '@/lib/redis';
-import { createClient } from '@/lib/supabase/server';
+import { NextResponse } from 'next/server'
+import { createClient as createSupabaseClient } from '@/lib/supabase/server'
+import { redis } from '@/lib/redis'
 
-/**
- * @swagger
- * /api/health:
- *   get:
- *     summary: System health check
- *     description: Check the health status of the application and its dependencies (database, cache, etc.)
- *     tags:
- *       - Health
- *     responses:
- *       200:
- *         description: System is healthy
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 status:
- *                   type: string
- *                   enum: [healthy, degraded]
- *                   description: Overall system status
- *                 timestamp:
- *                   type: string
- *                   format: date-time
- *                 version:
- *                   type: string
- *                   example: 1.0.0
- *                 services:
- *                   type: object
- *                   properties:
- *                     database:
- *                       type: object
- *                       properties:
- *                         status:
- *                           type: string
- *                           enum: [healthy, unhealthy]
- *                         latency:
- *                           type: number
- *                           description: Query latency in milliseconds
- *                     cache:
- *                       type: object
- *                       properties:
- *                         status:
- *                           type: string
- *                           enum: [healthy, unhealthy, disabled]
- *                         latency:
- *                           type: number
- *                           description: Ping latency in milliseconds
- *                         totalKeys:
- *                           type: number
- *                         hits:
- *                           type: number
- *                         misses:
- *                           type: number
- *       503:
- *         description: Service unavailable - one or more critical services are down
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 status:
- *                   type: string
- *                   example: unhealthy
- *                 error:
- *                   type: string
- */
 export async function GET() {
-  try {
-    // Check database health
-    const dbStart = Date.now();
-    const supabase = await createClient();
-    const { error: dbError } = await supabase.from('guides').select('id').limit(1);
-    const dbLatency = Date.now() - dbStart;
-
-    // Check Redis health
-    const redisHealth = await checkRedisHealth();
-    const cacheStats = await getCacheStats();
-
-    const status =
-      (!dbError && redisHealth.status !== 'unhealthy') ? 'healthy' : 'degraded';
-
-    const response = {
-      status,
-      timestamp: new Date().toISOString(),
-      version: '1.0.0',
-      services: {
-        database: {
-          status: dbError ? 'unhealthy' : 'healthy',
-          latency: dbLatency,
-          error: dbError?.message,
-        },
-        cache: {
-          status: redisHealth.status,
-          latency: redisHealth.latency,
-          totalKeys: cacheStats.totalKeys,
-          hits: cacheStats.hits,
-          misses: cacheStats.misses,
-          error: redisHealth.error,
-        },
-      },
-    };
-
-    // Return 503 if any critical service is unhealthy
-    if (dbError) {
-      return NextResponse.json(response, { status: 503 });
-    }
-
-    return NextResponse.json(response);
-  } catch (error) {
-    return NextResponse.json(
-      {
-        status: 'unhealthy',
-        error: error instanceof Error ? error.message : 'Unknown error',
-        timestamp: new Date().toISOString(),
-      },
-      { status: 503 }
-    );
+  const startTime = Date.now()
+  const health: Record<string, unknown> = {
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    environment: process.env.NODE_ENV,
   }
+
+  try {
+    const redisStart = Date.now()
+    await redis.ping()
+    health.redis = {
+      status: 'connected',
+      latency: Date.now() - redisStart,
+    }
+  } catch (error) {
+    health.redis = {
+      status: 'disconnected',
+      error: error instanceof Error ? error.message : 'Unknown error',
+    }
+    health.status = 'degraded'
+  }
+
+  try {
+    const dbStart = Date.now()
+    const supabase = await createSupabaseClient()
+    const { error, count } = await supabase
+      .from('guides')
+      .select('*', { count: 'exact', head: true })
+
+    if (error) throw error
+
+    health.database = {
+      status: 'connected',
+      latency: Date.now() - dbStart,
+      totalGuides: count ?? 0,
+    }
+  } catch (error) {
+    health.database = {
+      status: 'disconnected',
+      error: error instanceof Error ? error.message : 'Unknown error',
+    }
+    health.status = 'degraded'
+  }
+
+  const anthropicKey = process.env.ANTHROPIC_API_KEY
+  const openaiKey = process.env.OPENAI_API_KEY
+
+  health.ai = {
+    anthropic: anthropicKey ? 'configured' : 'missing',
+    openai: openaiKey ? 'configured' : 'missing',
+  }
+
+  if (!anthropicKey || !openaiKey) {
+    health.status = 'degraded'
+  }
+
+  const serpApiKey = process.env.SERP_API_KEY
+
+  health.serp = {
+    status: serpApiKey ? 'configured' : 'missing',
+  }
+
+  if (!serpApiKey) {
+    health.status = 'degraded'
+  }
+
+  health.responseTime = Date.now() - startTime
+
+  health.node = {
+    version: process.version,
+    platform: process.platform,
+    arch: process.arch,
+  }
+
+  health.memory = {
+    used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+    total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024),
+  }
+
+  const statusCode = health.status === 'healthy' ? 200 : 503
+
+  return NextResponse.json(health, { status: statusCode })
+}
+
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+    },
+  })
 }
