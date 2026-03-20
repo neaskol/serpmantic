@@ -74,17 +74,17 @@ Requirements for Sprint 3 - AI Modules. Each maps to roadmap phases.
 
 ### Testing
 
-- [ ] **TEST-01**: Unit tests for LLM Router
-- [ ] **TEST-02**: Unit tests for Context Builder
-- [ ] **TEST-03**: Unit tests for Prompt Executor
-- [ ] **TEST-04**: Integration tests for `/api/ai/execute` route
-- [ ] **TEST-05**: Integration tests for Plan generation
+- [x] **TEST-01**: Unit tests for LLM Router
+- [x] **TEST-02**: Unit tests for Context Builder
+- [x] **TEST-03**: Unit tests for Prompt Executor
+- [x] **TEST-04**: Integration tests for `/api/ai/execute` route
+- [x] **TEST-05**: Integration tests for Plan generation
 - [ ] **TEST-06**: Integration tests for IAssistant prompt execution
-- [ ] **TEST-07**: Integration tests for Intention classification
-- [ ] **TEST-08**: Integration tests for Meta generation
+- [x] **TEST-07**: Integration tests for Intention classification
+- [x] **TEST-08**: Integration tests for Meta generation
 - [ ] **TEST-09**: E2E test for full Plan workflow
 - [ ] **TEST-10**: E2E test for IAssistant prompt selection → execution → acceptance
-- [ ] **TEST-11**: Test coverage reaches 30-40% (up from 5%)
+- [x] **TEST-11**: Test coverage reaches 30-40% (up from 5%)
 
 ## Future Requirements (v0.4+)
 

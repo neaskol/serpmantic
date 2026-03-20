@@ -127,9 +127,11 @@ Plans:
 **Plans**: 3 plans in 2 waves
 
 Plans:
-- [ ] 06-01-PLAN.md -- Unit tests for AI utilities (router, context-builder, executor, json-extractor, outline-builder) + scoring + text-utils (Wave 1)
-- [ ] 06-02-PLAN.md -- Integration tests for AI API routes (plan, intention, meta) + contexts CRUD with mocked AI SDK (Wave 1)
-- [ ] 06-03-PLAN.md -- Full suite run, coverage report, vitest threshold calibration (Wave 2)
+- [x] 06-01-PLAN.md -- Unit tests for AI utilities (router, context-builder, executor, json-extractor, outline-builder) + scoring + text-utils (Wave 1)
+- [x] 06-02-PLAN.md -- Integration tests for AI API routes (plan, intention, meta) + contexts CRUD with mocked AI SDK (Wave 1)
+- [x] 06-03-PLAN.md -- Full suite run, coverage report, vitest threshold calibration (Wave 2)
+
+**Completed**: 2026-03-20
 
 ### Phase 7: Polish & Refinements
 **Goal**: Close integration gaps and architecture weaknesses identified in milestone audit
@@ -157,5 +159,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | 3. Module Plan | 2/2 | ✓ Complete | 2026-03-20 |
 | 4. Modules Intention & Meta | 2/2 | ✓ Complete | 2026-03-19 |
 | 5. Context System | 2/2 | ✓ Complete | 2026-03-19 |
-| 6. Testing & Quality | 0/3 | Not started | - |
+| 6. Testing & Quality | 3/3 | ✓ Complete | 2026-03-20 |
 | 7. Polish & Refinements | 0/1 | Not started | - |
