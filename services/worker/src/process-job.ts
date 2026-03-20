@@ -223,17 +223,26 @@ export async function processJob(jobId: string) {
     const nlpStartTime = Date.now()
     // Limit text size to avoid 502 errors on free tier NLP service
     const MAX_TEXT_LENGTH = 5000
-    const nlpResponse = await fetch(`${process.env.NLP_SERVICE_URL}/analyze`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        texts: crawledPages.map(p => p.text.substring(0, MAX_TEXT_LENGTH)),
-        language: lang,
-      }),
-    })
+
+    let nlpResponse
+    try {
+      nlpResponse = await fetch(`${process.env.NLP_SERVICE_URL}/analyze`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          texts: crawledPages.map(p => p.text.substring(0, MAX_TEXT_LENGTH)),
+          language: lang,
+        }),
+        signal: AbortSignal.timeout(120000), // 2 minutes timeout for NLP processing
+      })
+    } catch (fetchError) {
+      console.error('[Worker] NLP fetch failed:', fetchError)
+      throw new Error(`Failed to connect to NLP service: ${fetchError instanceof Error ? fetchError.message : 'Network error'}`)
+    }
 
     if (!nlpResponse.ok) {
-      throw new Error(`NLP service returned ${nlpResponse.status}`)
+      const errorText = await nlpResponse.text().catch(() => 'No error details')
+      throw new Error(`NLP service returned ${nlpResponse.status}: ${errorText}`)
     }
 
     const nlpData = await nlpResponse.json() as NlpResponse
