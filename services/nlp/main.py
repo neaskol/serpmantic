@@ -3,11 +3,19 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from textrazor_pipeline import analyze_corpus  # Using TextRazor instead of basic pipeline
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 import logging
 import os
+from collections import defaultdict
 
 logger = logging.getLogger(__name__)
+
+# In-memory usage tracking (resets on service restart)
+# In production, use Redis or a database for persistent tracking
+usage_tracker = {
+    "requests_today": 0,
+    "last_reset": datetime.now(timezone.utc).date().isoformat(),
+}
 
 
 def log_structured(level: str, message: str, **kwargs):
@@ -60,12 +68,57 @@ def health_ready():
     }
 
 
+def track_textrazor_request():
+    """Track a TextRazor API request and reset counter if needed"""
+    global usage_tracker
+
+    current_date = datetime.now(timezone.utc).date().isoformat()
+
+    # Reset counter if it's a new day
+    if usage_tracker["last_reset"] != current_date:
+        usage_tracker["requests_today"] = 0
+        usage_tracker["last_reset"] = current_date
+
+    # Increment request counter
+    usage_tracker["requests_today"] += 1
+
+
+@app.get("/textrazor/usage")
+def get_textrazor_usage():
+    """Get current TextRazor API usage statistics"""
+    current_date = datetime.now(timezone.utc).date().isoformat()
+
+    # Reset counter if it's a new day
+    if usage_tracker["last_reset"] != current_date:
+        usage_tracker["requests_today"] = 0
+        usage_tracker["last_reset"] = current_date
+
+    # Calculate next reset time (midnight UTC)
+    next_reset = datetime.now(timezone.utc).replace(
+        hour=0, minute=0, second=0, microsecond=0
+    )
+    # Add one day to get tomorrow's midnight
+    from datetime import timedelta
+    next_reset = next_reset + timedelta(days=1)
+
+    return {
+        "requests_today": usage_tracker["requests_today"],
+        "daily_limit": 500,
+        "requests_remaining": max(0, 500 - usage_tracker["requests_today"]),
+        "reset_at": next_reset.isoformat(),
+        "last_reset": usage_tracker["last_reset"],
+    }
+
+
 @app.post("/analyze")
 def analyze(req: AnalyzeRequest):
     try:
         log_structured("info", "Analysis started",
                       language=req.language,
                       num_texts=len(req.texts))
+
+        # Track TextRazor usage
+        track_textrazor_request()
 
         result = analyze_corpus(req.texts, req.language)
 

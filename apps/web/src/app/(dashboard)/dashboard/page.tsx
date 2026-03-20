@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createBrowserClient } from '@supabase/ssr'
 import { GuideCard } from '@/components/dashboard/guide-card'
 import { CreateGuideDialog } from '@/components/dashboard/create-guide-dialog'
+import { TextRazorUsageWidget } from '@/components/dashboard/textrazor-usage'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
 import { ErrorBoundary } from '@/components/error-boundary'
@@ -70,6 +71,11 @@ export default function DashboardPage() {
             Deconnexion
           </Button>
         </div>
+      </div>
+
+      {/* TextRazor Usage Widget */}
+      <div className="mb-6">
+        <TextRazorUsageWidget />
       </div>
 
       <ErrorBoundary>
