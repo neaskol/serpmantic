@@ -54,7 +54,17 @@ export function PlanPanel() {
 
       if (!res.ok) {
         const errData = await res.json().catch(() => ({ error: 'Erreur inconnue' }))
-        throw new Error(errData.error || `HTTP ${res.status}`)
+
+        // In development, show full error details
+        let fullError = errData.error || `HTTP ${res.status}`
+        if (process.env.NODE_ENV === 'development' && errData.details) {
+          fullError += `\n\nDetails: ${JSON.stringify(errData.details, null, 2)}`
+        }
+        if (process.env.NODE_ENV === 'development' && errData.message) {
+          fullError += `\n\nMessage: ${errData.message}`
+        }
+
+        throw new Error(fullError)
       }
 
       const data = await res.json()
@@ -64,6 +74,11 @@ export function PlanPanel() {
       const errorMessage = err instanceof Error ? err.message : 'Erreur lors de la generation'
       setError(errorMessage)
       toast.error(errorMessage)
+
+      // Log full error to console in development
+      if (process.env.NODE_ENV === 'development') {
+        console.error('[Plan Generation Error]', err)
+      }
     } finally {
       setGenerating(false)
     }
@@ -177,8 +192,14 @@ export function PlanPanel() {
       {/* Error display */}
       {error && (
         <Card size="sm" className="bg-red-50 border-red-200">
-          <CardContent className="py-2 px-3">
-            <p className="text-xs text-red-700">{error}</p>
+          <CardContent className="py-3 px-3">
+            <p className="text-xs font-semibold text-red-800 mb-2">Erreur lors de la génération du plan</p>
+            <pre className="text-xs text-red-700 whitespace-pre-wrap font-mono bg-red-100 p-2 rounded overflow-auto max-h-40">
+              {error}
+            </pre>
+            <p className="text-xs text-red-600 mt-2">
+              Ouvrez la console du navigateur (F12) pour plus de détails.
+            </p>
           </CardContent>
         </Card>
       )}
