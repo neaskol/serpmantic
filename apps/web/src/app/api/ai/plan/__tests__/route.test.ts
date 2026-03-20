@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mockGenerateTextResponse } from '@/test/mocks'
 
 // Create shared mock that will be returned by all calls
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 let mockSupabase: any
 
 // Mock all dependencies at top level
@@ -27,7 +28,8 @@ vi.mock('@/lib/ai/outline-builder', () => ({
 }))
 
 vi.mock('@/lib/error-handler', () => ({
-  handleApiError: vi.fn((error) => ({
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  handleApiError: vi.fn((_error) => ({
     json: async () => ({ error: 'Internal error' }),
     status: 500,
   })),

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 // Create shared mock
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 let mockSupabase: any
 
 // Mock all dependencies
@@ -30,7 +31,8 @@ vi.mock('@/lib/schemas', () => ({
 }))
 
 vi.mock('@/lib/error-handler', () => ({
-  handleApiError: vi.fn((error) => ({
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  handleApiError: vi.fn((_error) => ({
     json: async () => ({ error: 'Internal error' }),
     status: 500,
   })),
