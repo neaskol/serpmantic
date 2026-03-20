@@ -85,6 +85,13 @@ export default function GuideEditorPage() {
   async function handleAnalyze() {
     if (!guide) return
     setAnalyzing(true)
+
+    // Normalize search engine to full URL if needed
+    let searchEngineUrl = guide.search_engine
+    if (!searchEngineUrl.startsWith('http://') && !searchEngineUrl.startsWith('https://')) {
+      searchEngineUrl = `https://${searchEngineUrl}`
+    }
+
     toast.promise(
       (async () => {
         const res = await fetch('/api/serp/analyze', {
@@ -93,11 +100,14 @@ export default function GuideEditorPage() {
           body: JSON.stringify({
             keyword: guide.keyword,
             language: guide.language,
-            searchEngine: guide.search_engine,
+            searchEngine: searchEngineUrl,
             guideId: guide.id,
           }),
         })
-        if (!res.ok) throw new Error('Analyse echouee')
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({ error: 'Unknown error' }))
+          throw new Error(errorData.message || errorData.error || 'Analyse echouee')
+        }
         const data = await res.json()
         setSerpData(data.analysis, data.pages, data.terms)
         return data
@@ -105,7 +115,7 @@ export default function GuideEditorPage() {
       {
         loading: 'Analyse SERP en cours...',
         success: 'Analyse terminee !',
-        error: 'Erreur lors de l\'analyse SERP',
+        error: (err) => err instanceof Error ? err.message : 'Erreur lors de l\'analyse SERP',
       }
     )
   }

@@ -6,7 +6,13 @@ export const AnalyzeRequestSchema = z.object({
   language: z.enum(['fr', 'en', 'it', 'de', 'es'], {
     message: "Invalid language - must be one of: fr, en, it, de, es"
   }),
-  searchEngine: z.string().url("Invalid search engine URL"),
+  searchEngine: z.string().min(1, "Search engine required").refine(
+    (val) => {
+      // Accept both full URLs and domain names
+      return val.startsWith('http://') || val.startsWith('https://') || /^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(val)
+    },
+    { message: "Invalid search engine format" }
+  ),
   guideId: z.string().uuid("Invalid guide ID"),
 })
 
@@ -16,7 +22,13 @@ export type AnalyzeRequest = z.infer<typeof AnalyzeRequestSchema>
 export const CreateGuideSchema = z.object({
   keyword: z.string().min(1).max(200),
   language: z.enum(['fr', 'en', 'it', 'de', 'es']).default('fr'),
-  searchEngine: z.string().url().default('https://google.fr'),
+  searchEngine: z.string().min(1).refine(
+    (val) => {
+      // Accept both full URLs and domain names
+      return val.startsWith('http://') || val.startsWith('https://') || /^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(val)
+    },
+    { message: "Invalid search engine format" }
+  ).default('https://google.fr'),
 })
 
 export type CreateGuideRequest = z.infer<typeof CreateGuideSchema>
