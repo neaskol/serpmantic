@@ -110,65 +110,72 @@ export default function GuideEditorPage() {
     try {
       // Step 1: Fetching SERP
       setAnalysisStep('fetching')
-      await new Promise(resolve => setTimeout(resolve, 500)) // Brief delay to show step
 
-      const res = await fetch('/api/serp/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          keyword: guide.keyword,
-          language: guide.language,
-          searchEngine: searchEngineUrl,
-          guideId: guide.id,
-        }),
-      })
+      // Simulate realistic step progression while request is in flight
+      const timers: NodeJS.Timeout[] = []
 
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({ error: 'Unknown error' }))
+      timers.push(setTimeout(() => setAnalysisStep('crawling'), 5000))  // After 5s
+      timers.push(setTimeout(() => setAnalysisStep('nlp'), 15000))      // After 15s
+      timers.push(setTimeout(() => setAnalysisStep('saving'), 35000))   // After 35s
 
-        // Determine which step failed based on error message
-        let failedStep: AnalysisStep = 'fetching'
-        if (errorData.message?.includes('crawl') || errorData.error?.includes('crawl')) {
-          failedStep = 'crawling'
-        } else if (errorData.message?.includes('NLP') || errorData.error?.includes('NLP')) {
-          failedStep = 'nlp'
-        } else if (errorData.message?.includes('save') || errorData.error?.includes('save')) {
-          failedStep = 'saving'
+      try {
+        const res = await fetch('/api/serp/analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            keyword: guide.keyword,
+            language: guide.language,
+            searchEngine: searchEngineUrl,
+            guideId: guide.id,
+          }),
+        })
+
+        // Clear all pending timers once we get the response
+        timers.forEach(timer => clearTimeout(timer))
+
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({ error: 'Unknown error' }))
+
+          // Determine which step failed based on error message
+          let failedStep: AnalysisStep = 'fetching'
+          if (errorData.message?.includes('crawl') || errorData.error?.includes('crawl')) {
+            failedStep = 'crawling'
+          } else if (errorData.message?.includes('NLP') || errorData.error?.includes('NLP')) {
+            failedStep = 'nlp'
+          } else if (errorData.message?.includes('save') || errorData.error?.includes('save')) {
+            failedStep = 'saving'
+          }
+
+          const error: AnalysisError = {
+            step: failedStep,
+            message: errorData.message || errorData.error || 'Analyse échouée',
+            details: errorData.details ? JSON.stringify(errorData.details, null, 2) : undefined,
+            canRetry: res.status !== 429, // Don't retry if rate limited
+          }
+
+          setAnalysisError(error)
+          setAnalysisStep('error')
+          toast.error(error.message)
+          return
         }
 
-        const error: AnalysisError = {
-          step: failedStep,
-          message: errorData.message || errorData.error || 'Analyse échouée',
-          details: errorData.details ? JSON.stringify(errorData.details, null, 2) : undefined,
-          canRetry: res.status !== 429, // Don't retry if rate limited
-        }
+        const data = await res.json()
+        setSerpData(data.analysis, data.pages, data.terms)
 
-        setAnalysisError(error)
-        setAnalysisStep('error')
-        toast.error(error.message)
-        return
+        setAnalysisStep('complete')
+        toast.success('Analyse SERP terminée avec succès !')
+
+        // Auto-close dialog after success
+        setTimeout(() => {
+          setShowProgressDialog(false)
+          setAnalysisStep('idle')
+        }, 2000)
+
+      } catch (fetchError) {
+        // Clean up timers on fetch error
+        timers.forEach(timer => clearTimeout(timer))
+        throw fetchError
       }
-
-      // Simulate step progression (since we don't have real-time updates from backend)
-      setAnalysisStep('crawling')
-      await new Promise(resolve => setTimeout(resolve, 1000))
-
-      setAnalysisStep('nlp')
-      await new Promise(resolve => setTimeout(resolve, 1000))
-
-      setAnalysisStep('saving')
-
-      const data = await res.json()
-      setSerpData(data.analysis, data.pages, data.terms)
-
-      setAnalysisStep('complete')
-      toast.success('Analyse SERP terminée avec succès !')
-
-      // Auto-close dialog after success
-      setTimeout(() => {
-        setShowProgressDialog(false)
-        setAnalysisStep('idle')
-      }, 2000)
 
     } catch (error) {
       const err: AnalysisError = {
