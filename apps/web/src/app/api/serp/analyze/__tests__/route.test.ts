@@ -20,6 +20,20 @@ vi.mock('@/lib/rate-limit', () => ({
 vi.mock('@/lib/cache', () => ({
   getCachedSerpAnalysis: vi.fn().mockResolvedValue(null),
   setCachedSerpAnalysis: vi.fn().mockResolvedValue(undefined),
+  getCachedSerpResults: vi.fn().mockResolvedValue(null),
+  setCachedSerpResults: vi.fn().mockResolvedValue(undefined),
+}))
+
+vi.mock('@/lib/nlp-cache', () => ({
+  getNlpCacheEntries: vi.fn().mockResolvedValue({
+    cached: new Map(),
+    uncachedUrls: ['https://example.com'],
+  }),
+  setNlpCacheEntries: vi.fn().mockResolvedValue(undefined),
+}))
+
+vi.mock('@/lib/nlp-aggregator', () => ({
+  aggregateNlpResults: vi.fn().mockReturnValue({ terms: [], terms_to_avoid: [] }),
 }))
 
 vi.mock('@/lib/serp', () => ({

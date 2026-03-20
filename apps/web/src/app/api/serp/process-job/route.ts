@@ -6,6 +6,9 @@ import { calculateScore } from '@/lib/scoring'
 import type { SemanticTerm } from '@/types/database'
 import { logger } from '@/lib/logger'
 import { handleApiError, generateRequestId } from '@/lib/error-handler'
+import { getCachedSerpResults, setCachedSerpResults } from '@/lib/cache'
+import { getNlpCacheEntries, setNlpCacheEntries } from '@/lib/nlp-cache'
+import { aggregateNlpResults } from '@/lib/nlp-aggregator'
 
 /**
  * Background worker endpoint to process SERP analysis jobs
@@ -52,9 +55,16 @@ export async function POST(request: NextRequest) {
     const { keyword, language: lang, search_engine: engine } = guide
 
     try {
-      // Step 1: Fetch SERP results
-      logger.info('Fetching SERP results', { keyword, engine })
-      const serpResults = await fetchSerpResults(keyword, lang, engine)
+      // Step 1: Fetch SERP results (check cache first)
+      let serpResults = await getCachedSerpResults(keyword, lang, engine) as Awaited<ReturnType<typeof fetchSerpResults>> | null
+
+      if (serpResults) {
+        logger.info('SERP results cache hit', { keyword, engine, numResults: serpResults.length })
+      } else {
+        logger.info('Fetching SERP results from SerpAPI', { keyword, engine })
+        serpResults = await fetchSerpResults(keyword, lang, engine)
+        await setCachedSerpResults(keyword, lang, engine, serpResults)
+      }
 
       // Limit to 6 pages to stay under 60s timeout
       const limitedResults = serpResults.slice(0, 6)
@@ -82,36 +92,82 @@ export async function POST(request: NextRequest) {
         throw new Error('Not enough pages could be crawled')
       }
 
-      // Step 3: NLP analysis
+      // Step 3: NLP analysis (with cache)
       await supabase
         .from('serp_jobs')
         .update({ progress_step: 'nlp' })
         .eq('id', jobId)
 
-      logger.info('Calling NLP service', {
-        language: lang,
-        numPages: crawledPages.length,
-      })
-      const nlpStartTime = Date.now()
-      const nlpResponse = await fetch(`${process.env.NLP_SERVICE_URL}/analyze`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          texts: crawledPages.map(p => p.text),
-          language: lang,
-        }),
+      const crawledUrls = crawledPages.map(p => p.url)
+      const { cached: nlpCached, uncachedUrls } = await getNlpCacheEntries(crawledUrls, lang)
+
+      logger.info('NLP cache check', {
+        total: crawledPages.length,
+        cached: nlpCached.size,
+        uncached: uncachedUrls.length,
       })
 
-      if (!nlpResponse.ok) {
-        throw new Error(`NLP service returned ${nlpResponse.status}`)
+      let nlpData: { terms: any[]; terms_to_avoid: string[] }
+
+      if (uncachedUrls.length === 0) {
+        const lemmaLists = crawledPages.map(p => {
+          const entry = nlpCached.get(p.url)
+          return entry ? (entry.lemmas as string[]) : []
+        })
+        nlpData = aggregateNlpResults(lemmaLists)
+
+        logger.info('NLP analysis from cache (0 TextRazor calls)', {
+          termsFound: nlpData.terms.length,
+        })
+      } else {
+        const uncachedPages = crawledPages.filter(p => uncachedUrls.includes(p.url))
+
+        const nlpStartTime = Date.now()
+        const nlpResponse = await fetch(`${process.env.NLP_SERVICE_URL}/analyze-with-lemmas`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            texts: uncachedPages.map(p => p.text),
+            language: lang,
+          }),
+        })
+
+        if (!nlpResponse.ok) {
+          throw new Error(`NLP service returned ${nlpResponse.status}`)
+        }
+
+        const freshData = await nlpResponse.json()
+
+        logger.info('NLP analysis completed', {
+          duration: Date.now() - nlpStartTime,
+          textrazorCalls: uncachedPages.length,
+          savedCalls: nlpCached.size,
+        })
+
+        // Cache fresh per-URL results
+        if (freshData.per_url_lemmas) {
+          const cacheEntries = uncachedPages.map((page, i) => ({
+            url: page.url,
+            language: lang,
+            lemmas: freshData.per_url_lemmas[i] || [],
+            entities: freshData.per_url_entities?.[i] || [],
+            topics: freshData.per_url_topics?.[i] || [],
+          }))
+          await setNlpCacheEntries(cacheEntries)
+        }
+
+        if (nlpCached.size === 0) {
+          nlpData = { terms: freshData.terms, terms_to_avoid: freshData.terms_to_avoid }
+        } else {
+          const allLemmas = crawledPages.map(p => {
+            const cachedEntry = nlpCached.get(p.url)
+            if (cachedEntry) return cachedEntry.lemmas as string[]
+            const freshIdx = uncachedPages.findIndex(up => up.url === p.url)
+            return freshData.per_url_lemmas?.[freshIdx] || []
+          })
+          nlpData = aggregateNlpResults(allLemmas)
+        }
       }
-
-      const nlpData = await nlpResponse.json()
-      logger.info('NLP analysis completed', {
-        termsFound: nlpData.terms?.length || 0,
-        termsToAvoid: nlpData.terms_to_avoid?.length || 0,
-        duration: Date.now() - nlpStartTime,
-      })
 
       // Step 4: Calculate benchmarks and save
       await supabase

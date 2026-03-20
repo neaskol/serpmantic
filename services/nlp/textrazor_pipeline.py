@@ -156,54 +156,16 @@ def calculate_term_frequencies(lemma_lists: List[List[str]]) -> Dict[str, List[i
     return dict(all_terms)
 
 
-def analyze_corpus(texts: List[str], language: str = "fr") -> dict:
+def _aggregate_lemma_lists(lemma_lists: List[List[str]], num_texts: int) -> dict:
     """
-    Analyze a corpus of SERP page texts using TextRazor.
-    Returns semantic terms with occurrence ranges.
+    Shared aggregation logic: given per-document lemma lists,
+    compute significant terms with occurrence ranges and terms to avoid.
     """
-    # Validate inputs
-    if not texts:
-        logger.warning("Empty corpus provided")
-        return {"terms": [], "terms_to_avoid": []}
-
-    if language not in ["fr", "en", "it", "de", "es"]:
-        raise ValueError(f"Unsupported language: {language}")
-
-    if len(texts) < 2:
-        logger.warning("Not enough documents for analysis")
-        return {"terms": [], "terms_to_avoid": []}
-
-    logger.info(f"Analyzing {len(texts)} documents with TextRazor (language: {language})")
-
-    # Analyze each text with TextRazor
-    lemma_lists = []
-    all_entities = []
-
-    for i, text in enumerate(texts):
-        try:
-            # Truncate to 200KB if needed (TextRazor limit)
-            max_bytes = 200 * 1024
-            text_bytes = text.encode('utf-8')
-            if len(text_bytes) > max_bytes:
-                text = text_bytes[:max_bytes].decode('utf-8', errors='ignore')
-                logger.warning(f"Document {i+1} truncated to 200KB")
-
-            result = analyze_text_with_textrazor(text, language)
-            lemma_lists.append(result["lemmas"])
-            all_entities.extend(result["entities"])
-
-            logger.info(f"Document {i+1}/{len(texts)}: {len(result['lemmas'])} lemmas extracted")
-
-        except Exception as e:
-            logger.error(f"Failed to analyze document {i+1}: {e}")
-            # Continue with empty lemmas for this document
-            lemma_lists.append([])
-
     # Calculate term frequencies
     term_frequencies = calculate_term_frequencies(lemma_lists)
 
     # Filter significant terms (appear in at least 40% of docs)
-    min_doc_freq = max(2, int(len(texts) * 0.4))
+    min_doc_freq = max(2, int(num_texts * 0.4))
     significant_terms = {}
 
     for term, freqs in term_frequencies.items():
@@ -227,7 +189,7 @@ def analyze_corpus(texts: List[str], language: str = "fr") -> dict:
         max_occ = sorted_freqs[p90_idx]
 
         # Calculate importance (based on average frequency)
-        avg_freq = sum(freqs) / len(texts)
+        avg_freq = sum(freqs) / num_texts
         importance = round(avg_freq * 10, 2)
 
         # Determine term type
@@ -258,14 +220,101 @@ def analyze_corpus(texts: List[str], language: str = "fr") -> dict:
     for term, freqs in term_frequencies.items():
         if len(term.split()) == 1:  # Only unigrams
             doc_freq = sum(1 for f in freqs if f > 0)
-            if doc_freq == len(texts):  # Appears in ALL docs
-                avg_freq = sum(freqs) / len(texts)
+            if doc_freq == num_texts:  # Appears in ALL docs
+                avg_freq = sum(freqs) / num_texts
                 if avg_freq > 5:  # High frequency
                     terms_to_avoid.append(term)
-
-    logger.info(f"Analysis complete: {len(terms)} significant terms, {len(terms_to_avoid)} terms to avoid")
 
     return {
         "terms": terms[:100],  # Cap at 100
         "terms_to_avoid": terms_to_avoid[:20],  # Cap at 20
+    }
+
+
+def _extract_texts_with_textrazor(texts: List[str], language: str) -> tuple:
+    """
+    Run TextRazor on each text, returning per-document results.
+    Returns (lemma_lists, entities_per_url, topics_per_url).
+    """
+    lemma_lists = []
+    entities_per_url = []
+    topics_per_url = []
+
+    for i, text in enumerate(texts):
+        try:
+            # Truncate to 200KB if needed (TextRazor limit)
+            max_bytes = 200 * 1024
+            text_bytes = text.encode('utf-8')
+            if len(text_bytes) > max_bytes:
+                text = text_bytes[:max_bytes].decode('utf-8', errors='ignore')
+                logger.warning(f"Document {i+1} truncated to 200KB")
+
+            result = analyze_text_with_textrazor(text, language)
+            lemma_lists.append(result["lemmas"])
+            entities_per_url.append(result["entities"])
+            topics_per_url.append(result["topics"])
+
+            logger.info(f"Document {i+1}/{len(texts)}: {len(result['lemmas'])} lemmas extracted")
+
+        except Exception as e:
+            logger.error(f"Failed to analyze document {i+1}: {e}")
+            lemma_lists.append([])
+            entities_per_url.append([])
+            topics_per_url.append([])
+
+    return lemma_lists, entities_per_url, topics_per_url
+
+
+def analyze_corpus(texts: List[str], language: str = "fr") -> dict:
+    """
+    Analyze a corpus of SERP page texts using TextRazor.
+    Returns semantic terms with occurrence ranges.
+    """
+    if not texts:
+        logger.warning("Empty corpus provided")
+        return {"terms": [], "terms_to_avoid": []}
+
+    if language not in ["fr", "en", "it", "de", "es"]:
+        raise ValueError(f"Unsupported language: {language}")
+
+    if len(texts) < 2:
+        logger.warning("Not enough documents for analysis")
+        return {"terms": [], "terms_to_avoid": []}
+
+    logger.info(f"Analyzing {len(texts)} documents with TextRazor (language: {language})")
+
+    lemma_lists, _, _ = _extract_texts_with_textrazor(texts, language)
+    result = _aggregate_lemma_lists(lemma_lists, len(texts))
+
+    logger.info(f"Analysis complete: {len(result['terms'])} significant terms, {len(result['terms_to_avoid'])} terms to avoid")
+
+    return result
+
+
+def analyze_corpus_with_lemmas(texts: List[str], language: str = "fr") -> dict:
+    """
+    Same as analyze_corpus but also returns per-document lemma lists,
+    entities, and topics for caching individual URL results.
+    """
+    if not texts:
+        return {"terms": [], "terms_to_avoid": [], "per_url_lemmas": [], "per_url_entities": [], "per_url_topics": []}
+
+    if language not in ["fr", "en", "it", "de", "es"]:
+        raise ValueError(f"Unsupported language: {language}")
+
+    if len(texts) < 2:
+        return {"terms": [], "terms_to_avoid": [], "per_url_lemmas": [], "per_url_entities": [], "per_url_topics": []}
+
+    logger.info(f"Analyzing {len(texts)} documents with TextRazor + per-URL lemmas (language: {language})")
+
+    lemma_lists, entities_per_url, topics_per_url = _extract_texts_with_textrazor(texts, language)
+    result = _aggregate_lemma_lists(lemma_lists, len(texts))
+
+    logger.info(f"Analysis complete: {len(result['terms'])} significant terms, {len(result['terms_to_avoid'])} terms to avoid")
+
+    return {
+        **result,
+        "per_url_lemmas": lemma_lists,
+        "per_url_entities": entities_per_url,
+        "per_url_topics": topics_per_url,
     }

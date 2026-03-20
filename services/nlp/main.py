@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from textrazor_pipeline import analyze_corpus  # Using TextRazor instead of basic pipeline
+from textrazor_pipeline import analyze_corpus, analyze_corpus_with_lemmas
 import json
 from datetime import datetime, timezone
 import logging
@@ -129,6 +129,30 @@ def analyze(req: AnalyzeRequest):
         return result
     except Exception as e:
         log_structured("error", "Analysis failed",
+                      language=req.language,
+                      error=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/analyze-with-lemmas")
+def analyze_with_lemmas(req: AnalyzeRequest):
+    """Same as /analyze but also returns per-URL lemmas/entities/topics for caching."""
+    try:
+        log_structured("info", "Analysis with lemmas started",
+                      language=req.language,
+                      num_texts=len(req.texts))
+
+        track_textrazor_request()
+
+        result = analyze_corpus_with_lemmas(req.texts, req.language)
+
+        log_structured("info", "Analysis with lemmas completed",
+                      language=req.language,
+                      num_terms=len(result["terms"]))
+
+        return result
+    except Exception as e:
+        log_structured("error", "Analysis with lemmas failed",
                       language=req.language,
                       error=str(e))
         raise HTTPException(status_code=500, detail=str(e))
