@@ -341,8 +341,10 @@ export async function scrapeFullSerpAnalysis(
   };
 }
 
-export default {
+const serpScraperFree = {
   scrapeGoogleSerp: scrapeGoogleSerpSafe,
   scrapePageContent: scrapePageContentSafe,
   scrapeFullSerpAnalysis,
 };
+
+export default serpScraperFree;

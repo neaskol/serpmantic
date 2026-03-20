@@ -90,7 +90,7 @@ export async function groqChatCompletion(
  */
 export async function generateContentPlan(
   keyword: string,
-  serpData: any,
+  serpData: { pages: Array<{ title: string; headings?: string[] }> },
   context?: string
 ) {
   const systemPrompt = `Tu es un expert SEO qui génère des plans de contenu optimisés.
@@ -99,7 +99,7 @@ Analyse les titres H2/H3 des pages SERP top-10 et crée un plan exhaustif.`;
   const userPrompt = `Mot-clé cible : "${keyword}"
 
 Titres observés dans la SERP :
-${serpData.pages.map((p: any) => `- ${p.title}: ${p.headings?.join(', ')}`).join('\n')}
+${serpData.pages.map((p) => `- ${p.title}: ${p.headings?.join(', ')}`).join('\n')}
 
 ${context ? `Contexte additionnel : ${context}` : ''}
 
@@ -208,7 +208,7 @@ Liste les corrections nécessaires avec :
  */
 export async function analyzeSearchIntent(
   keyword: string,
-  serpPages: any[]
+  serpPages: Array<{ title: string; url: string }>
 ) {
   const systemPrompt = `Tu es un expert en analyse d'intention de recherche SEO.
 Classifie l'intention : informationnelle, transactionnelle, navigationnelle, ou commerciale.`;
