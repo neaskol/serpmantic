@@ -88,11 +88,11 @@ export async function executePrompt(options: ExecuteOptions): Promise<ExecuteRes
     prompt,
     async onFinish({ text, usage, finishReason }) {
       // Log completion info
-      // AI SDK v5+ changed property names: inputTokens -> promptTokens, outputTokens -> completionTokens
-      const usageObj = usage as Record<string, number>
-      const promptTokens: number = (usageObj.promptTokens ?? usageObj.inputTokens ?? 0) as number
-      const completionTokens: number = (usageObj.completionTokens ?? usageObj.outputTokens ?? 0) as number
-      const totalTokens: number = (usageObj.totalTokens ?? (promptTokens + completionTokens)) as number
+      // Extract token usage - access dynamically to handle varying SDK versions
+      const usageAny: any = usage
+      const promptTokens = Number(usageAny.promptTokens || usageAny.inputTokens || 0)
+      const completionTokens = Number(usageAny.completionTokens || usageAny.outputTokens || 0)
+      const totalTokens = Number(usageAny.totalTokens || (promptTokens + completionTokens))
 
       logger.info('AI execution completed', {
         modelId,

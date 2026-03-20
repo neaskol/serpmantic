@@ -250,11 +250,12 @@ export async function POST(request: NextRequest) {
     // Log to ai_requests table
     const modelId = 'anthropic/claude-sonnet-4-5-20250929'
 
-    // Handle AI SDK v5 property name differences
-    const usageObj = result.usage as Record<string, number>
-    const promptTokens = (usageObj.promptTokens ?? usageObj.inputTokens ?? 0) as number
-    const completionTokens = (usageObj.completionTokens ?? usageObj.outputTokens ?? 0) as number
-    const totalTokens = (usageObj.totalTokens ?? (promptTokens + completionTokens)) as number
+    // Extract token usage - AI SDK v6 structure varies by model
+    // Access properties dynamically to avoid TypeScript errors
+    const usage: any = result.usage
+    const promptTokens = Number(usage.promptTokens || usage.inputTokens || 0)
+    const completionTokens = Number(usage.completionTokens || usage.outputTokens || 0)
+    const totalTokens = Number(usage.totalTokens || (promptTokens + completionTokens))
 
     const cost = estimateCost(modelId, { promptTokens, completionTokens })
 

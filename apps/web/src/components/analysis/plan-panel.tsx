@@ -139,16 +139,26 @@ export function PlanPanel() {
       }
     }
 
-    // Convert outline to HTML headings
-    const html = outline
-      .map((section) => {
-        if (section.level === 'h2') {
-          return `<h2>${section.title}</h2>`
-        } else {
-          return `<h3>${section.title}</h3>`
-        }
-      })
-      .join('\n')
+    // Convert outline to HTML structure with paragraphs for editing
+    const htmlParts: string[] = []
+
+    outline.forEach((section, index) => {
+      // Add heading
+      if (section.level === 'h2') {
+        htmlParts.push(`<h2>${section.title}</h2>`)
+      } else {
+        htmlParts.push(`<h3>${section.title}</h3>`)
+      }
+
+      // Add empty paragraph after each heading for content writing
+      // Add 2 paragraphs after H2 for more writing space, 1 after H3
+      const paragraphCount = section.level === 'h2' ? 2 : 1
+      for (let i = 0; i < paragraphCount; i++) {
+        htmlParts.push('<p></p>')
+      }
+    })
+
+    const html = htmlParts.join('\n')
 
     // Insert into editor
     editor.chain().focus().insertContent(html).run()
