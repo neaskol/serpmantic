@@ -48,6 +48,13 @@ type NlpResponse = {
   terms_to_avoid: string[]
 }
 
+type SerpApiResponse = {
+  organic_results: Array<{
+    link: string
+    title: string
+  }>
+}
+
 // Helper: Fetch SERP results
 async function fetchSerpResults(keyword: string, lang: string, engine: string) {
   const serpApiKey = process.env.SERPAPI_KEY
@@ -72,13 +79,13 @@ async function fetchSerpResults(keyword: string, lang: string, engine: string) {
     throw new Error(`SerpAPI returned ${response.status}: ${response.statusText}`)
   }
 
-  const data = await response.json()
+  const data = await response.json() as SerpApiResponse
 
   if (!data.organic_results || data.organic_results.length === 0) {
     throw new Error('No organic results found in SERP')
   }
 
-  return data.organic_results.map((result: any) => ({
+  return data.organic_results.map((result) => ({
     link: result.link,
     title: result.title,
   }))
