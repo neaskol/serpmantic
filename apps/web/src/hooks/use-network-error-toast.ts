@@ -12,7 +12,11 @@ export function useNetworkErrorToast() {
         const response = await originalFetch(...args)
 
         if (!response.ok) {
-          const url = typeof args[0] === 'string' ? args[0] : args[0].url
+          const url = typeof args[0] === 'string'
+            ? args[0]
+            : args[0] instanceof Request
+              ? args[0].url
+              : args[0].toString()
           const method = typeof args[1] === 'object' && args[1]?.method ? args[1].method : 'GET'
 
           let errorMessage = `Erreur ${response.status}`
