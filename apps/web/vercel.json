@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "apps/web/src/app/api/serp/analyze/route.ts": {
+      "maxDuration": 300
+    }
+  }
+}

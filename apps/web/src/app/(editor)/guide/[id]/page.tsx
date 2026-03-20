@@ -119,6 +119,10 @@ export default function GuideEditorPage() {
       timers.push(setTimeout(() => setAnalysisStep('saving'), 35000))   // After 35s
 
       try {
+        // Create abort controller for timeout
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 120000) // 2 minutes timeout
+
         const res = await fetch('/api/serp/analyze', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -128,7 +132,10 @@ export default function GuideEditorPage() {
             searchEngine: searchEngineUrl,
             guideId: guide.id,
           }),
+          signal: controller.signal,
         })
+
+        clearTimeout(timeoutId)
 
         // Clear all pending timers once we get the response
         timers.forEach(timer => clearTimeout(timer))
@@ -178,10 +185,22 @@ export default function GuideEditorPage() {
       }
 
     } catch (error) {
+      let errorMessage = 'Erreur réseau'
+      let errorDetails: string | undefined = undefined
+
+      // Handle abort/timeout errors
+      if (error instanceof Error && error.name === 'AbortError') {
+        errorMessage = 'L\'analyse a pris trop de temps (> 2 minutes). Le service est peut-être surchargé. Veuillez réessayer dans quelques instants.'
+        errorDetails = 'Timeout après 120 secondes. Cela peut arriver si : 1) Le crawling des pages est très lent, 2) Le service NLP a un cold start, 3) SerpAPI est lent à répondre.'
+      } else if (error instanceof Error) {
+        errorMessage = error.message
+        errorDetails = error.stack
+      }
+
       const err: AnalysisError = {
         step: analysisStep === 'idle' ? 'fetching' : analysisStep,
-        message: error instanceof Error ? error.message : 'Erreur réseau',
-        details: error instanceof Error ? error.stack : undefined,
+        message: errorMessage,
+        details: errorDetails,
         canRetry: true,
       }
       setAnalysisError(err)
