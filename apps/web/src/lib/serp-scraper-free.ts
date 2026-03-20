@@ -224,10 +224,13 @@ export async function scrapePageContent(url: string): Promise<{
     const headings: { level: number; text: string }[] = [];
     $('h1, h2, h3, h4, h5, h6').each((_, element) => {
       const $heading = $(element);
-      const level = parseInt($heading.prop('tagName').replace('H', ''), 10);
-      const text = $heading.text().trim();
-      if (text) {
-        headings.push({ level, text });
+      const tagName = $heading.prop('tagName');
+      if (tagName) {
+        const level = parseInt(tagName.replace('H', ''), 10);
+        const text = $heading.text().trim();
+        if (text) {
+          headings.push({ level, text });
+        }
       }
     });
 
