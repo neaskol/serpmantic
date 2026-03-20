@@ -46,23 +46,36 @@ export function PlanPanel() {
     setError(null)
 
     try {
+      console.log('[Plan] Starting generation for guide:', guide.id)
+
       const res = await fetch('/api/ai/plan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ guideId: guide.id }),
       })
 
+      console.log('[Plan] Response status:', res.status, res.statusText)
+
       if (!res.ok) {
         const errData = await res.json().catch(() => ({ error: 'Erreur inconnue' }))
+        console.error('[Plan] Error response data:', errData)
 
-        // In development, show full error details
+        // Always show full error details in development
         let fullError = errData.error || `HTTP ${res.status}`
-        if (process.env.NODE_ENV === 'development' && errData.details) {
-          fullError += `\n\nDetails: ${JSON.stringify(errData.details, null, 2)}`
-        }
-        if (process.env.NODE_ENV === 'development' && errData.message) {
+
+        // Add all available error information
+        if (errData.message) {
           fullError += `\n\nMessage: ${errData.message}`
         }
+        if (errData.details) {
+          fullError += `\n\nDetails: ${JSON.stringify(errData.details, null, 2)}`
+        }
+        if (errData.requestId) {
+          fullError += `\n\nRequest ID: ${errData.requestId}`
+        }
+
+        // Add raw response for debugging
+        fullError += `\n\nFull server response:\n${JSON.stringify(errData, null, 2)}`
 
         throw new Error(fullError)
       }
