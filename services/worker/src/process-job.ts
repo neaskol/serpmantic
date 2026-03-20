@@ -36,6 +36,18 @@ type SemanticTerm = {
   is_to_avoid: boolean
 }
 
+type NlpResponse = {
+  terms: Array<{
+    term: string
+    display_term: string
+    min_occurrences: number
+    max_occurrences: number
+    importance: number
+    term_type: string
+  }>
+  terms_to_avoid: string[]
+}
+
 // Helper: Fetch SERP results
 async function fetchSerpResults(keyword: string, lang: string, engine: string) {
   // TODO: Implement actual SERP API call (ValueSerp, SerpApi, etc.)
@@ -194,7 +206,7 @@ export async function processJob(jobId: string) {
       throw new Error(`NLP service returned ${nlpResponse.status}`)
     }
 
-    const nlpData = await nlpResponse.json()
+    const nlpData = await nlpResponse.json() as NlpResponse
     console.log(`[Worker] NLP completed in ${Date.now() - nlpStartTime}ms - ${nlpData.terms?.length || 0} terms found`)
 
     // Step 4: Calculate benchmarks and save
