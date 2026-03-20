@@ -14,10 +14,11 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: AI Foundation** - Multi-LLM streaming infrastructure and database schema
 - [x] **Phase 2: Module IAssistant** - Prompt library with 15 public prompts and execution engine
-- [ ] **Phase 3: Module Plan** - AI-generated content outlines from SERP analysis
+- [x] **Phase 3: Module Plan** - AI-generated content outlines from SERP analysis
 - [x] **Phase 4: Modules Intention & Meta** - Search intent classification and SEO metadata generation
-- [ ] **Phase 5: Context System** - Prompt enrichment with audience, tone, sector, brief
+- [x] **Phase 5: Context System** - Prompt enrichment with audience, tone, sector, brief
 - [ ] **Phase 6: Testing & Quality** - Comprehensive test coverage for AI modules
+- [ ] **Phase 7: Polish & Refinements** - Close integration gaps and architecture improvements
 
 ## Phase Details
 
@@ -130,10 +131,24 @@ Plans:
 - [ ] 06-02-PLAN.md -- Integration tests for AI API routes (plan, intention, meta) + contexts CRUD with mocked AI SDK (Wave 1)
 - [ ] 06-03-PLAN.md -- Full suite run, coverage report, vitest threshold calibration (Wave 2)
 
+### Phase 7: Polish & Refinements
+**Goal**: Close integration gaps and architecture weaknesses identified in milestone audit
+**Depends on**: Phase 6 (polish after testing confirms stability)
+**Gap Closure**: Closes 1 integration gap from v0.3.0-MILESTONE-AUDIT.md
+**Success Criteria** (what must be TRUE):
+  1. MetaPanel PATCH refreshes guide-store after successful save
+  2. Analysis panels wrapped in ErrorBoundary components
+  3. ContextSelector shows loading state during fetch
+  4. Meta changes use optimistic updates for better UX
+**Plans**: 1 plan in 1 wave
+
+Plans:
+- [ ] 07-01-PLAN.md -- Fix guide-store sync, add error boundaries, loading states, optimistic updates (Wave 1)
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
+Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -143,3 +158,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 4. Modules Intention & Meta | 2/2 | ✓ Complete | 2026-03-19 |
 | 5. Context System | 2/2 | ✓ Complete | 2026-03-19 |
 | 6. Testing & Quality | 0/3 | Not started | - |
+| 7. Polish & Refinements | 0/1 | Not started | - |
