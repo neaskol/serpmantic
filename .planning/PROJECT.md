@@ -16,44 +16,34 @@ The application has a split-screen interface: TipTap WYSIWYG editor on the left,
 
 <!-- Sprint 1 & 2 shipped features -->
 
-- ✓ Guide CRUD operations — Sprint 1
-- ✓ TipTap editor with rich formatting (H1-H6, bold, italic, lists, tables, images, videos, links) — Sprint 1
-- ✓ Supabase auth and RLS policies — Sprint 1
-- ✓ Basic dashboard with guide cards — Sprint 1
-- ✓ NLP service (Python FastAPI) with TF-IDF and lemmatization (5 languages) — Sprint 1
-- ✓ OpenAPI/Swagger API documentation — Sprint 2
-- ✓ Redis caching layer (24h SERP, 5min guides) — Sprint 2
-- ✓ Database performance indexes (10x speedup) — Sprint 2
-- ✓ Load testing infrastructure with autocannon — Sprint 2
+- ✓ Guide CRUD operations — v0.1.0
+- ✓ TipTap editor with rich formatting (H1-H6, bold, italic, lists, tables, images, videos, links) — v0.1.0
+- ✓ Supabase auth and RLS policies — v0.1.0
+- ✓ Basic dashboard with guide cards — v0.1.0
+- ✓ NLP service (Python FastAPI) with TF-IDF and lemmatization (5 languages) — v0.1.0
+- ✓ OpenAPI/Swagger API documentation — v0.2.0
+- ✓ Redis caching layer (24h SERP, 5min guides) — v0.2.0
+- ✓ Database performance indexes (10x speedup) — v0.2.0
+- ✓ Load testing infrastructure with autocannon — v0.2.0
+
+<!-- Sprint 3 shipped features - v0.3.0 -->
+
+- ✓ Multi-LLM streaming infrastructure (Anthropic Claude + OpenAI GPT) — v0.3.0
+- ✓ LLM Router with task-based model selection — v0.3.0
+- ✓ Context Builder enriching prompts with SERP data — v0.3.0
+- ✓ Prompt Executor with streaming and token tracking — v0.3.0
+- ✓ AI-generated H2/H3 content outline from SERP analysis — v0.3.0
+- ✓ 15 pre-built prompts across 6 categories — v0.3.0
+- ✓ Prompt execution on selected text or full document — v0.3.0
+- ✓ Context system (audience, tone, sector, brief) — v0.3.0
+- ✓ AI-powered search intent classification — v0.3.0
+- ✓ Content alignment scoring against identified intent — v0.3.0
+- ✓ AI-generated SEO title and meta description — v0.3.0
+- ✓ Test coverage 85.5% (236 tests passing) — v0.3.0
 
 ### Active
 
-<!-- Sprint 3 scope -->
-
-**Module Plan:**
-- [ ] AI-generated H2/H3 content outline based on SERP analysis
-- [ ] Uses Anthropic Claude for outline generation
-
-**Module IAssistant:**
-- [ ] Multi-LLM routing (Anthropic Claude + OpenAI GPT)
-- [ ] 15+ pre-built prompts (construction plan, grammar, tone, semantic optimization, media suggestions)
-- [ ] Prompt execution on selected text or full document
-- [ ] Context system (audience, tone, sector, brief)
-
-**Module Intention:**
-- [ ] AI-powered search intent classification (informational/transactional/navigational/commercial)
-- [ ] Content alignment check against identified intent
-
-**Module Meta:**
-- [ ] AI-generated SEO title (60 char limit) and meta description (158 char limit)
-- [ ] Character counters and copy buttons
-- [ ] Save meta fields to guide
-
-**Testing:**
-- [ ] Test coverage 30-40% (currently ~5%)
-- [ ] Test AI prompt execution
-- [ ] Test API routes for new modules
-- [ ] Basic UI tests
+<!-- v0.4.0 scope - to be defined -->
 
 ### Out of Scope
 
@@ -64,17 +54,18 @@ The application has a split-screen interface: TipTap WYSIWYG editor on the left,
 - Collaboration features (real-time editing, sharing) — deferred to v1.0+
 - Export PDF/Word — deferred to v1.0+
 
-## Current Milestone: v0.3.0 Sprint 3 - Modules IA & Features Avancées
+## Current State
 
-**Goal:** Implement AI-powered content assistance modules (Plan, IAssistant, Intention, Meta) with multi-LLM routing and context system.
+**Latest shipped:** v0.3.0 Sprint 3 - AI Modules (2026-03-20)
 
-**Target features:**
-- Module Plan (AI content outline)
-- Module IAssistant base (15+ prompts, multi-LLM)
-- Module Intention (search intent analysis)
-- Module Meta (AI-generated SEO metadata)
-- Context system for prompts (audience, tone, sector)
-- Test coverage 30-40%
+**What's working:**
+- Full AI foundation with multi-LLM routing (Claude + GPT)
+- 4 specialized AI modules (IAssistant, Plan, Intention, Meta)
+- Reusable context system for prompt enrichment
+- 236 tests with 85.5% coverage
+- Production-ready error handling and optimistic updates
+
+**Next milestone:** v0.4.0 (to be defined)
 
 ## Context
 
@@ -94,10 +85,10 @@ The application has a split-screen interface: TipTap WYSIWYG editor on the left,
 - Pain points addressed: Manual SERP analysis, semantic gap detection, content structure uncertainty
 
 **Known issues:**
-- Currently only 1/7 tabs implemented (Optimisation tab)
-- 6 tabs are placeholder/mock
-- Test coverage very low (~5%)
-- No AI capabilities yet (Sprint 3 will add them)
+- Currently 4/7 analysis tabs implemented (Optimisation, IAssistant, Plan, Intention, Meta)
+- 2 tabs remaining: Liens (internal linking), Config (share/language settings)
+- Custom user prompts not yet implemented (deferred to v0.4+)
+- Auto-optimization Beta not yet implemented (deferred to v0.4+)
 
 ## Constraints
 
@@ -116,7 +107,9 @@ The application has a split-screen interface: TipTap WYSIWYG editor on the left,
 | Zustand vs Jotai for state | Zustand simpler, less boilerplate, good for our use case | ✓ Good (Sprint 1, working well) |
 | TipTap vs Slate/Lexical | TipTap has excellent ProseMirror foundation, rich ecosystem | ✓ Good (Sprint 1, very stable) |
 | ioredis vs Upstash REST | ioredis unified client, better performance, standard Redis protocol | ✓ Good (Sprint 2, simplified caching logic) |
-| Multi-LLM routing (Claude + GPT) | Redundancy, cost optimization (GPT cheaper for simple tasks), use best model for each task | — Pending (Sprint 3 will implement) |
+| Multi-LLM routing (Claude + GPT) | Redundancy, cost optimization (GPT cheaper for simple tasks), use best model for each task | ✓ Good (v0.3.0, working excellently) |
+| Test coverage 85.5% (exceeded 30-40% target) | Establish strong quality foundation, prevent regressions with Vitest thresholds | ✓ Good (v0.3.0, quality floor established) |
+| Context FK + JSONB fallback | Backward compatibility while enabling normalized context references | ✓ Good (v0.3.0, flexible architecture) |
 
 ---
-*Last updated: 2026-03-19 after Sprint 3 milestone initialization*
+*Last updated: 2026-03-20 after v0.3.0 milestone completion*
