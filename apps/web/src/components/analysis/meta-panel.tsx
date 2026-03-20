@@ -18,6 +18,7 @@ type MetaSuggestion = {
 
 export function MetaPanel() {
   const guide = useGuideStore((s) => s.guide)
+  const setGuide = useGuideStore((s) => s.setGuide)
   const plainText = useEditorStore((s) => s.plainText)
   const [metaTitle, setMetaTitle] = useState(guide?.meta_title ?? '')
   const [metaDescription, setMetaDescription] = useState(guide?.meta_description ?? '')
@@ -39,6 +40,10 @@ export function MetaPanel() {
     if (!guide) return
     setSaving(true)
 
+    // Capture previous values for rollback
+    const prevTitle = guide.meta_title ?? ''
+    const prevDesc = guide.meta_description ?? ''
+
     try {
       const res = await fetch(`/api/guides/${guide.id}`, {
         method: 'PATCH',
@@ -50,11 +55,19 @@ export function MetaPanel() {
       })
 
       if (res.ok) {
+        const updatedGuide = await res.json()
+        setGuide(updatedGuide) // Sync guide-store with server state
         toast.success('Meta tags sauvegardees')
       } else {
+        // Revert on failure
+        setMetaTitle(prevTitle)
+        setMetaDescription(prevDesc)
         toast.error('Erreur lors de la sauvegarde')
       }
     } catch {
+      // Revert on network error
+      setMetaTitle(prevTitle)
+      setMetaDescription(prevDesc)
       toast.error('Erreur reseau')
     } finally {
       setSaving(false)
