@@ -77,6 +77,17 @@ export async function POST(request: NextRequest) {
       .map((page, i) => `${i + 1}. ${page.title}\n   URL: ${page.url}`)
       .join('\n\n')
 
+    // Determine response language instruction
+    const languageInstruction = language.startsWith('fr')
+      ? 'Réponds en français. Les descriptions et questions doivent être en français.'
+      : language.startsWith('es')
+      ? 'Responde en español. Las descripciones y preguntas deben estar en español.'
+      : language.startsWith('it')
+      ? 'Rispondi in italiano. Le descrizioni e le domande devono essere in italiano.'
+      : language.startsWith('de')
+      ? 'Antworte auf Deutsch. Die Beschreibungen und Fragen müssen auf Deutsch sein.'
+      : 'Respond in English. Descriptions and questions must be in English.'
+
     // Build prompt for intent classification
     const prompt = `Analyze the search intent for the keyword: "${keyword}"
 
@@ -90,6 +101,8 @@ Classify the search intent. For each of these 4 intent types, provide a percenta
 3. Navigationnel - User wants to find a specific website or page
 4. Comparatif - User is researching/comparing before purchase
 
+${languageInstruction}
+
 Return ONLY valid JSON (no markdown, no explanation):
 {
   "primaryIntent": "informationnel",
@@ -98,8 +111,8 @@ Return ONLY valid JSON (no markdown, no explanation):
     {
       "type": "informationnel",
       "percentage": 70,
-      "description": "Users want to understand...",
-      "questions": ["What is X?", "How does X work?"]
+      "description": "Les utilisateurs veulent comprendre...",
+      "questions": ["Qu'est-ce que X ?", "Comment fonctionne X ?"]
     }
   ]
 }`
