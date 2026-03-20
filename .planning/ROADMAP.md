@@ -145,7 +145,7 @@ Plans:
 **Plans**: 1 plan in 1 wave
 
 Plans:
-- [ ] 07-01-PLAN.md -- Fix guide-store sync, add error boundaries, loading states, optimistic updates (Wave 1)
+- [ ] 07-01-PLAN.md -- Fix MetaPanel guide-store sync + optimistic save, ErrorBoundary wrapping for all analysis panels, ContextSelector loading skeleton (Wave 1)
 
 ## Progress
 
