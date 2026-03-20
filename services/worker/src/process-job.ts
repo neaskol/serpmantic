@@ -221,11 +221,13 @@ export async function processJob(jobId: string) {
 
     console.log(`[Worker] Calling NLP service`)
     const nlpStartTime = Date.now()
+    // Limit text size to avoid 502 errors on free tier NLP service
+    const MAX_TEXT_LENGTH = 5000
     const nlpResponse = await fetch(`${process.env.NLP_SERVICE_URL}/analyze`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        texts: crawledPages.map(p => p.text),
+        texts: crawledPages.map(p => p.text.substring(0, MAX_TEXT_LENGTH)),
         language: lang,
       }),
     })
