@@ -101,6 +101,19 @@ export type ScoreResult = {
   structuralMetrics: StructuralMetrics
 }
 
+export type SerpJob = {
+  id: string
+  guide_id: string
+  status: 'pending' | 'processing' | 'completed' | 'failed'
+  progress_step: 'fetching' | 'crawling' | 'nlp' | 'saving' | null
+  error_message: string | null
+  error_details: Record<string, unknown> | null
+  started_at: string | null
+  completed_at: string | null
+  created_at: string
+  updated_at: string
+}
+
 // === AI Module Types (Sprint 3) ===
 
 export type Prompt = {

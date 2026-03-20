@@ -43,7 +43,9 @@ export default function GuideEditorPage() {
   const [analysisStep, setAnalysisStep] = useState<AnalysisStep>('idle')
   const [analysisError, setAnalysisError] = useState<AnalysisError | undefined>()
   const [showProgressDialog, setShowProgressDialog] = useState(false)
+  const [currentJobId, setCurrentJobId] = useState<string | null>(null)
   const saveRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   // Fetch guide on mount
   useEffect(() => {
@@ -92,7 +94,70 @@ export default function GuideEditorPage() {
     }
   }, [content, guide, score])
 
-  // SERP analysis handler with progress tracking
+  // Poll job status
+  async function pollJobStatus(jobId: string) {
+    try {
+      const res = await fetch(`/api/serp/job-status/${jobId}`)
+      if (!res.ok) return
+
+      const data = await res.json()
+
+      // Update progress step based on job status
+      const stepMap: Record<string, AnalysisStep> = {
+        pending: 'idle',
+        processing: data.progressStep || 'fetching',
+        completed: 'complete',
+        failed: 'error',
+      }
+
+      const newStep = stepMap[data.status] || 'fetching'
+      setAnalysisStep(newStep)
+
+      // If completed successfully
+      if (data.status === 'completed' && data.data) {
+        setSerpData(data.data.analysis, data.data.pages, data.data.terms)
+        toast.success('Analyse SERP terminée avec succès !')
+
+        // Stop polling
+        if (pollingIntervalRef.current) {
+          clearInterval(pollingIntervalRef.current)
+          pollingIntervalRef.current = null
+        }
+
+        // Auto-close dialog
+        setTimeout(() => {
+          setShowProgressDialog(false)
+          setAnalysisStep('idle')
+          setCurrentJobId(null)
+          setAnalyzing(false)
+        }, 2000)
+      }
+
+      // If failed
+      if (data.status === 'failed') {
+        const error: AnalysisError = {
+          step: newStep,
+          message: data.error || 'L\'analyse a échoué',
+          details: data.errorDetails ? JSON.stringify(data.errorDetails, null, 2) : undefined,
+          canRetry: true,
+        }
+        setAnalysisError(error)
+        toast.error(error.message)
+
+        // Stop polling
+        if (pollingIntervalRef.current) {
+          clearInterval(pollingIntervalRef.current)
+          pollingIntervalRef.current = null
+        }
+
+        setAnalyzing(false)
+      }
+    } catch (error) {
+      console.error('Error polling job status:', error)
+    }
+  }
+
+  // SERP analysis handler with async job
   async function handleAnalyze() {
     if (!guide) return
 
@@ -108,105 +173,57 @@ export default function GuideEditorPage() {
     }
 
     try {
-      // Step 1: Fetching SERP
-      setAnalysisStep('fetching')
+      // Create job
+      const res = await fetch('/api/serp/analyze-v2', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          keyword: guide.keyword,
+          language: guide.language,
+          searchEngine: searchEngineUrl,
+          guideId: guide.id,
+        }),
+      })
 
-      // Simulate realistic step progression while request is in flight
-      const timers: NodeJS.Timeout[] = []
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ error: 'Unknown error' }))
 
-      timers.push(setTimeout(() => setAnalysisStep('crawling'), 5000))  // After 5s
-      timers.push(setTimeout(() => setAnalysisStep('nlp'), 15000))      // After 15s
-      timers.push(setTimeout(() => setAnalysisStep('saving'), 35000))   // After 35s
-
-      try {
-        // Create abort controller for timeout
-        const controller = new AbortController()
-        const timeoutId = setTimeout(() => controller.abort(), 120000) // 2 minutes timeout
-
-        const res = await fetch('/api/serp/analyze', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            keyword: guide.keyword,
-            language: guide.language,
-            searchEngine: searchEngineUrl,
-            guideId: guide.id,
-          }),
-          signal: controller.signal,
-        })
-
-        clearTimeout(timeoutId)
-
-        // Clear all pending timers once we get the response
-        timers.forEach(timer => clearTimeout(timer))
-
-        if (!res.ok) {
-          const errorData = await res.json().catch(() => ({ error: 'Unknown error' }))
-
-          // Determine which step failed based on error message
-          let failedStep: AnalysisStep = 'fetching'
-          if (errorData.message?.includes('crawl') || errorData.error?.includes('crawl')) {
-            failedStep = 'crawling'
-          } else if (errorData.message?.includes('NLP') || errorData.error?.includes('NLP')) {
-            failedStep = 'nlp'
-          } else if (errorData.message?.includes('save') || errorData.error?.includes('save')) {
-            failedStep = 'saving'
-          }
-
-          const error: AnalysisError = {
-            step: failedStep,
-            message: errorData.message || errorData.error || 'Analyse échouée',
-            details: errorData.details ? JSON.stringify(errorData.details, null, 2) : undefined,
-            canRetry: res.status !== 429, // Don't retry if rate limited
-          }
-
-          setAnalysisError(error)
-          setAnalysisStep('error')
-          toast.error(error.message)
-          return
+        const error: AnalysisError = {
+          step: 'fetching',
+          message: errorData.message || errorData.error || 'Impossible de démarrer l\'analyse',
+          details: errorData.details ? JSON.stringify(errorData.details, null, 2) : undefined,
+          canRetry: res.status !== 429,
         }
 
-        const data = await res.json()
-        setSerpData(data.analysis, data.pages, data.terms)
-
-        setAnalysisStep('complete')
-        toast.success('Analyse SERP terminée avec succès !')
-
-        // Auto-close dialog after success
-        setTimeout(() => {
-          setShowProgressDialog(false)
-          setAnalysisStep('idle')
-        }, 2000)
-
-      } catch (fetchError) {
-        // Clean up timers on fetch error
-        timers.forEach(timer => clearTimeout(timer))
-        throw fetchError
+        setAnalysisError(error)
+        setAnalysisStep('error')
+        toast.error(error.message)
+        setAnalyzing(false)
+        return
       }
+
+      const data = await res.json()
+      setCurrentJobId(data.jobId)
+      setAnalysisStep('fetching')
+
+      // Start polling every 2 seconds
+      pollingIntervalRef.current = setInterval(() => {
+        pollJobStatus(data.jobId)
+      }, 2000)
+
+      // Initial poll
+      pollJobStatus(data.jobId)
 
     } catch (error) {
-      let errorMessage = 'Erreur réseau'
-      let errorDetails: string | undefined = undefined
-
-      // Handle abort/timeout errors
-      if (error instanceof Error && error.name === 'AbortError') {
-        errorMessage = 'L\'analyse a pris trop de temps (> 2 minutes). Le service est peut-être surchargé. Veuillez réessayer dans quelques instants.'
-        errorDetails = 'Timeout après 120 secondes. Cela peut arriver si : 1) Le crawling des pages est très lent, 2) Le service NLP a un cold start, 3) SerpAPI est lent à répondre.'
-      } else if (error instanceof Error) {
-        errorMessage = error.message
-        errorDetails = error.stack
-      }
-
       const err: AnalysisError = {
-        step: analysisStep === 'idle' ? 'fetching' : analysisStep,
-        message: errorMessage,
-        details: errorDetails,
+        step: 'fetching',
+        message: error instanceof Error ? error.message : 'Erreur réseau',
+        details: error instanceof Error ? error.stack : undefined,
         canRetry: true,
       }
       setAnalysisError(err)
       setAnalysisStep('error')
       toast.error(err.message)
-    } finally {
       setAnalyzing(false)
     }
   }
@@ -214,8 +231,22 @@ export default function GuideEditorPage() {
   function handleRetryAnalysis() {
     setAnalysisError(undefined)
     setAnalysisStep('idle')
+    setCurrentJobId(null)
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current)
+      pollingIntervalRef.current = null
+    }
     handleAnalyze()
   }
+
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current)
+      }
+    }
+  }, [])
 
   return (
     <div className="h-screen flex flex-col">
