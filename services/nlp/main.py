@@ -53,11 +53,9 @@ def health():
 
 @app.get("/health/ready")
 def health_ready():
-    """Readiness check - verify models are loaded"""
-    from pipeline import _models
+    """Readiness check - verify service is ready"""
     return {
         "status": "ready",
-        "models_loaded": list(_models.keys()),
         "timestamp": datetime.utcnow().isoformat()
     }
 
