@@ -21,12 +21,12 @@ Requirements for Sprint 3 - AI Modules. Each maps to roadmap phases.
 
 ### Module Plan (AI Content Outline)
 
-- [ ] **PLAN-01**: User can click "Generate outline" button in Plan tab
-- [ ] **PLAN-02**: AI generates H2/H3 outline based on SERP analysis
-- [ ] **PLAN-03**: Outline enriched with competitor H2/H3 structure from SERP
-- [ ] **PLAN-04**: User can preview generated outline before inserting
-- [ ] **PLAN-05**: User can insert outline into editor with one click
-- [ ] **PLAN-06**: System warns if outline would cause over-optimization (score > 100)
+- [x] **PLAN-01**: User can click "Generate outline" button in Plan tab
+- [x] **PLAN-02**: AI generates H2/H3 outline based on SERP analysis
+- [x] **PLAN-03**: Outline enriched with competitor H2/H3 structure from SERP
+- [x] **PLAN-04**: User can preview generated outline before inserting
+- [x] **PLAN-05**: User can insert outline into editor with one click
+- [x] **PLAN-06**: System warns if outline would cause over-optimization (score > 100)
 
 ### Module IAssistant (Prompt Library)
 
