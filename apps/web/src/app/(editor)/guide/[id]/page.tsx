@@ -20,6 +20,14 @@ import {
 import Link from 'next/link'
 import { toast } from 'sonner'
 import { ErrorBoundary } from '@/components/error-boundary'
+import { SerpAnalysisProgress, type AnalysisStep, type AnalysisError } from '@/components/analysis/serp-analysis-progress'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 
 export default function GuideEditorPage() {
   const { id } = useParams()
@@ -32,6 +40,9 @@ export default function GuideEditorPage() {
   const content = useEditorStore((s) => s.content)
   const [loading, setLoading] = useState(false)
   const [analyzing, setAnalyzing] = useState(false)
+  const [analysisStep, setAnalysisStep] = useState<AnalysisStep>('idle')
+  const [analysisError, setAnalysisError] = useState<AnalysisError | undefined>()
+  const [showProgressDialog, setShowProgressDialog] = useState(false)
   const saveRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Fetch guide on mount
@@ -81,10 +92,14 @@ export default function GuideEditorPage() {
     }
   }, [content, guide, score])
 
-  // SERP analysis handler
+  // SERP analysis handler with progress tracking
   async function handleAnalyze() {
     if (!guide) return
+
     setAnalyzing(true)
+    setAnalysisStep('idle')
+    setAnalysisError(undefined)
+    setShowProgressDialog(true)
 
     // Normalize search engine to full URL if needed
     let searchEngineUrl = guide.search_engine
@@ -92,32 +107,88 @@ export default function GuideEditorPage() {
       searchEngineUrl = `https://${searchEngineUrl}`
     }
 
-    toast.promise(
-      (async () => {
-        const res = await fetch('/api/serp/analyze', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            keyword: guide.keyword,
-            language: guide.language,
-            searchEngine: searchEngineUrl,
-            guideId: guide.id,
-          }),
-        })
-        if (!res.ok) {
-          const errorData = await res.json().catch(() => ({ error: 'Unknown error' }))
-          throw new Error(errorData.message || errorData.error || 'Analyse echouee')
+    try {
+      // Step 1: Fetching SERP
+      setAnalysisStep('fetching')
+      await new Promise(resolve => setTimeout(resolve, 500)) // Brief delay to show step
+
+      const res = await fetch('/api/serp/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          keyword: guide.keyword,
+          language: guide.language,
+          searchEngine: searchEngineUrl,
+          guideId: guide.id,
+        }),
+      })
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ error: 'Unknown error' }))
+
+        // Determine which step failed based on error message
+        let failedStep: AnalysisStep = 'fetching'
+        if (errorData.message?.includes('crawl') || errorData.error?.includes('crawl')) {
+          failedStep = 'crawling'
+        } else if (errorData.message?.includes('NLP') || errorData.error?.includes('NLP')) {
+          failedStep = 'nlp'
+        } else if (errorData.message?.includes('save') || errorData.error?.includes('save')) {
+          failedStep = 'saving'
         }
-        const data = await res.json()
-        setSerpData(data.analysis, data.pages, data.terms)
-        return data
-      })().finally(() => setAnalyzing(false)),
-      {
-        loading: 'Analyse SERP en cours...',
-        success: 'Analyse terminee !',
-        error: (err) => err instanceof Error ? err.message : 'Erreur lors de l\'analyse SERP',
+
+        const error: AnalysisError = {
+          step: failedStep,
+          message: errorData.message || errorData.error || 'Analyse échouée',
+          details: errorData.details ? JSON.stringify(errorData.details, null, 2) : undefined,
+          canRetry: res.status !== 429, // Don't retry if rate limited
+        }
+
+        setAnalysisError(error)
+        setAnalysisStep('error')
+        toast.error(error.message)
+        return
       }
-    )
+
+      // Simulate step progression (since we don't have real-time updates from backend)
+      setAnalysisStep('crawling')
+      await new Promise(resolve => setTimeout(resolve, 1000))
+
+      setAnalysisStep('nlp')
+      await new Promise(resolve => setTimeout(resolve, 1000))
+
+      setAnalysisStep('saving')
+
+      const data = await res.json()
+      setSerpData(data.analysis, data.pages, data.terms)
+
+      setAnalysisStep('complete')
+      toast.success('Analyse SERP terminée avec succès !')
+
+      // Auto-close dialog after success
+      setTimeout(() => {
+        setShowProgressDialog(false)
+        setAnalysisStep('idle')
+      }, 2000)
+
+    } catch (error) {
+      const err: AnalysisError = {
+        step: analysisStep === 'idle' ? 'fetching' : analysisStep,
+        message: error instanceof Error ? error.message : 'Erreur réseau',
+        details: error instanceof Error ? error.stack : undefined,
+        canRetry: true,
+      }
+      setAnalysisError(err)
+      setAnalysisStep('error')
+      toast.error(err.message)
+    } finally {
+      setAnalyzing(false)
+    }
+  }
+
+  function handleRetryAnalysis() {
+    setAnalysisError(undefined)
+    setAnalysisStep('idle')
+    handleAnalyze()
   }
 
   return (
@@ -182,6 +253,23 @@ export default function GuideEditorPage() {
 
       {/* Score bar footer */}
       <div className="h-1.5" style={{ backgroundColor: scoreColor }} />
+
+      {/* Analysis Progress Dialog */}
+      <Dialog open={showProgressDialog} onOpenChange={setShowProgressDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Analyse SERP</DialogTitle>
+            <DialogDescription>
+              Analyse sémantique approfondie de la SERP Google pour "{guide?.keyword}"
+            </DialogDescription>
+          </DialogHeader>
+          <SerpAnalysisProgress
+            currentStep={analysisStep}
+            error={analysisError}
+            onRetry={handleRetryAnalysis}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
