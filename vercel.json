@@ -1,0 +1,21 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "cd apps/web && pnpm install && pnpm build",
+  "devCommand": "cd apps/web && pnpm dev",
+  "installCommand": "pnpm install",
+  "framework": "nextjs",
+  "outputDirectory": "apps/web/.next",
+  "env": {
+    "NEXT_PUBLIC_SUPABASE_URL": "@serpmantic-supabase-url",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "@serpmantic-supabase-anon-key",
+    "SUPABASE_SERVICE_ROLE_KEY": "@serpmantic-supabase-service-key",
+    "ANTHROPIC_API_KEY": "@serpmantic-anthropic-key",
+    "OPENAI_API_KEY": "@serpmantic-openai-key",
+    "SERPAPI_KEY": "@serpmantic-serpapi-key",
+    "UPSTASH_REDIS_URL": "@serpmantic-upstash-url",
+    "UPSTASH_REDIS_TOKEN": "@serpmantic-upstash-token",
+    "NLP_SERVICE_URL": "@serpmantic-nlp-service-url"
+  },
+  "regions": ["cdg1"],
+  "crons": []
+}
