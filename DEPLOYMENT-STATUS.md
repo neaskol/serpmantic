@@ -1,17 +1,18 @@
 # État du déploiement SERPmantics
 
-**Date** : 20 mars 2026, 15:10
+**Date** : 20 mars 2026, 15:30
 **Version** : v0.3.0
 
 ---
 
-## ✅ Services configurés (3/5)
+## ✅ Services configurés (4/5)
 
 | Service | Statut | Détails |
 |---------|--------|---------|
 | **Upstash Redis** | ✅ Configuré | Cache + rate limiting OK |
 | **OpenAI GPT** | ✅ Configuré | API key valide, gpt-4o-mini testé |
 | **Groq (gratuit)** | ✅ Configuré | llama-3.3-70b-versatile OK |
+| **Service NLP** | 🚀 En déploiement | Version simplifiée sans ML, push en cours sur Render |
 
 ---
 
