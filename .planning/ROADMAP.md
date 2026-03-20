@@ -114,21 +114,21 @@ Plans:
 **Completed**: 2026-03-19
 
 ### Phase 6: Testing & Quality
-**Goal**: Test coverage reaches 30-40% with unit, integration, and E2E tests for all AI modules
+**Goal**: Test coverage reaches 30-40% with unit and integration tests for all AI modules
 **Depends on**: Phases 1-5 (tests all AI functionality)
 **Requirements**: TEST-01, TEST-02, TEST-03, TEST-04, TEST-05, TEST-06, TEST-07, TEST-08, TEST-09, TEST-10, TEST-11
 **Success Criteria** (what must be TRUE):
   1. Unit tests cover LLM Router, Context Builder, and Prompt Executor core logic
   2. Integration tests verify `/api/ai/execute` endpoint with mocked LLM responses
-  3. Integration tests validate Plan, IAssistant, Intention, and Meta API routes
-  4. E2E tests verify full workflows: Plan generation → preview → insert, IAssistant prompt → execute → accept
-  5. Test coverage report shows 30-40% (up from 5%)
-**Plans**: TBD
+  3. Integration tests validate Plan, Intention, Meta, and Contexts API routes
+  4. Coverage report shows 30-40% line coverage (up from ~5%)
+  5. Vitest thresholds calibrated as quality floor
+**Plans**: 3 plans in 2 waves
 
 Plans:
-- [ ] 06-01: Write unit tests for AI foundation components
-- [ ] 06-02: Write integration tests for API routes with LLM mocks
-- [ ] 06-03: Write E2E tests for critical user workflows
+- [ ] 06-01-PLAN.md -- Unit tests for AI utilities (router, context-builder, executor, json-extractor, outline-builder) + scoring + text-utils (Wave 1)
+- [ ] 06-02-PLAN.md -- Integration tests for AI API routes (plan, intention, meta) + contexts CRUD with mocked AI SDK (Wave 1)
+- [ ] 06-03-PLAN.md -- Full suite run, coverage report, vitest threshold calibration (Wave 2)
 
 ## Progress
 
@@ -139,7 +139,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 |-------|----------------|--------|-----------|
 | 1. AI Foundation | 3/3 | ✓ Complete | 2026-03-19 |
 | 2. Module IAssistant | 2/2 | ✓ Complete | 2026-03-19 |
-| 3. Module Plan | 1/2 | In progress | - |
+| 3. Module Plan | 2/2 | ✓ Complete | 2026-03-20 |
 | 4. Modules Intention & Meta | 2/2 | ✓ Complete | 2026-03-19 |
 | 5. Context System | 2/2 | ✓ Complete | 2026-03-19 |
 | 6. Testing & Quality | 0/3 | Not started | - |
