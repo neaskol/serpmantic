@@ -1,9 +1,9 @@
 {
   "functions": {
-    "apps/web/src/app/api/serp/analyze-v2/route.ts": {
+    "src/app/api/serp/analyze-v2/route.ts": {
       "maxDuration": 10
     },
-    "apps/web/src/app/api/serp/job-status/[jobId]/route.ts": {
+    "src/app/api/serp/job-status/[jobId]/route.ts": {
       "maxDuration": 10
     }
   }
