@@ -50,17 +50,38 @@ type NlpResponse = {
 
 // Helper: Fetch SERP results
 async function fetchSerpResults(keyword: string, lang: string, engine: string) {
-  // TODO: Implement actual SERP API call (ValueSerp, SerpApi, etc.)
-  // For now, return mock data
+  const serpApiKey = process.env.SERPAPI_KEY
+  if (!serpApiKey) {
+    throw new Error('SERPAPI_KEY environment variable is not set')
+  }
+
   console.log(`[SERP] Fetching results for "${keyword}" (${lang}, ${engine})`)
-  return [
-    { link: 'https://example.com/1', title: 'Result 1' },
-    { link: 'https://example.com/2', title: 'Result 2' },
-    { link: 'https://example.com/3', title: 'Result 3' },
-    { link: 'https://example.com/4', title: 'Result 4' },
-    { link: 'https://example.com/5', title: 'Result 5' },
-    { link: 'https://example.com/6', title: 'Result 6' },
-  ]
+
+  const params = new URLSearchParams({
+    q: keyword,
+    engine: 'google',
+    api_key: serpApiKey,
+    num: '10',
+    hl: lang,
+    gl: lang === 'fr' ? 'fr' : 'us',
+  })
+
+  const response = await fetch(`https://serpapi.com/search?${params}`)
+
+  if (!response.ok) {
+    throw new Error(`SerpAPI returned ${response.status}: ${response.statusText}`)
+  }
+
+  const data = await response.json()
+
+  if (!data.organic_results || data.organic_results.length === 0) {
+    throw new Error('No organic results found in SERP')
+  }
+
+  return data.organic_results.map((result: any) => ({
+    link: result.link,
+    title: result.title,
+  }))
 }
 
 // Helper: Crawl a page
