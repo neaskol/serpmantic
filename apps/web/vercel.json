@@ -1,7 +1,13 @@
 {
   "functions": {
     "apps/web/src/app/api/serp/analyze/route.ts": {
-      "maxDuration": 300
+      "maxDuration": 60
+    },
+    "apps/web/src/app/api/serp/process-job/route.ts": {
+      "maxDuration": 60
+    },
+    "apps/web/src/app/api/serp/analyze-v2/route.ts": {
+      "maxDuration": 10
     }
   }
 }

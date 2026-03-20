@@ -55,9 +55,12 @@ export async function POST(request: NextRequest) {
       // Step 1: Fetch SERP results
       logger.info('Fetching SERP results', { keyword, engine })
       const serpResults = await fetchSerpResults(keyword, lang, engine)
-      logger.info('SERP results fetched', { numResults: serpResults.length })
 
-      if (serpResults.length === 0) {
+      // Limit to 6 pages to stay under 60s timeout
+      const limitedResults = serpResults.slice(0, 6)
+      logger.info('SERP results fetched', { numResults: limitedResults.length, total: serpResults.length })
+
+      if (limitedResults.length === 0) {
         throw new Error('No SERP results found')
       }
 
@@ -67,12 +70,12 @@ export async function POST(request: NextRequest) {
         .update({ progress_step: 'crawling' })
         .eq('id', jobId)
 
-      logger.info('Crawling SERP pages', { numPages: serpResults.length })
-      const crawlPromises = serpResults.map(r => crawlPage(r.link))
+      logger.info('Crawling SERP pages', { numPages: limitedResults.length })
+      const crawlPromises = limitedResults.map(r => crawlPage(r.link))
       const crawledPages = (await Promise.all(crawlPromises)).filter(Boolean) as CrawledPage[]
       logger.info('Pages crawled', {
         successful: crawledPages.length,
-        total: serpResults.length,
+        total: limitedResults.length,
       })
 
       if (crawledPages.length < 2) {

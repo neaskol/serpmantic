@@ -26,7 +26,7 @@ export async function crawlPage(url: string): Promise<CrawledPage | null> {
         'User-Agent': 'Mozilla/5.0 (compatible; SERPmantics/1.0)',
         'Accept': 'text/html',
       },
-      signal: AbortSignal.timeout(15000),
+      signal: AbortSignal.timeout(8000), // Reduced from 15s to 8s
     })
 
     if (!response.ok) {
