@@ -22,8 +22,8 @@ const groq = new Groq({
  * Modèles disponibles sur Groq (gratuits)
  */
 export const GROQ_MODELS = {
-  // Meilleur modèle général (équivalent Claude 3.5 Sonnet)
-  LLAMA_70B: 'llama-3.1-70b-versatile',
+  // Meilleur modèle général (équivalent Claude 3.5 Sonnet) - 2026 update
+  LLAMA_70B: 'llama-3.3-70b-versatile',
 
   // Rapide et léger (équivalent GPT-4o-mini)
   LLAMA_8B: 'llama-3.1-8b-instant',
