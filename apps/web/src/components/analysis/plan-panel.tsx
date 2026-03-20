@@ -4,64 +4,138 @@ import { useState } from 'react'
 import { useGuideStore } from '@/stores/guide-store'
 import { useEditorStore } from '@/stores/editor-store'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
-import { FileText, Sparkles, AlertTriangle, BookOpen, ChevronDown, ChevronUp } from 'lucide-react'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { FileText, Sparkles, AlertTriangle, BookOpen, ChevronDown, ChevronUp, AlertCircle } from 'lucide-react'
+import { toast } from 'sonner'
+import type { OutlineSection } from '@/types/database'
 
-type PlanSection = {
-  level: 'h2' | 'h3'
-  title: string
-  keywords: string[]
+/**
+ * Normalize text: lowercase + remove accents
+ */
+function normalizeText(text: string): string {
+  return text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
 }
 
 export function PlanPanel() {
   const guide = useGuideStore((s) => s.guide)
+  const score = useGuideStore((s) => s.score)
   const serpPages = useGuideStore((s) => s.serpPages)
   const semanticTerms = useGuideStore((s) => s.semanticTerms)
+  const editor = useEditorStore((s) => s.editor)
   const plainText = useEditorStore((s) => s.plainText)
+
   const [generating, setGenerating] = useState(false)
-  const [plan, setPlan] = useState<PlanSection[] | null>(null)
+  const [outline, setOutline] = useState<OutlineSection[] | null>(null)
+  const [showPreview, setShowPreview] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [showHelp, setShowHelp] = useState(false)
 
   const editorHasContent = plainText.trim().length > 50
 
   async function handleGenerate() {
-    if (!guide) return
-    if (editorHasContent) return
+    if (!guide) {
+      toast.error('Aucun guide charge')
+      return
+    }
 
     setGenerating(true)
+    setError(null)
+
     try {
       const res = await fetch('/api/ai/plan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          keyword: guide.keyword,
-          language: guide.language,
-          serpPages: serpPages.filter((p) => !p.is_excluded).map((p) => ({
-            url: p.url,
-            title: p.title,
-            score: p.score,
-          })),
-          topTerms: semanticTerms
-            .filter((t) => !t.is_to_avoid)
-            .sort((a, b) => b.importance - a.importance)
-            .slice(0, 30)
-            .map((t) => t.display_term),
-        }),
+        body: JSON.stringify({ guideId: guide.id }),
       })
 
-      if (res.ok) {
-        const data = await res.json()
-        setPlan(data.plan)
-      } else {
-        setPlan(null)
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({ error: 'Erreur inconnue' }))
+        throw new Error(errData.error || `HTTP ${res.status}`)
       }
-    } catch {
-      setPlan(null)
+
+      const data = await res.json()
+      setOutline(data.outline)
+      setShowPreview(true)
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Erreur lors de la generation'
+      setError(errorMessage)
+      toast.error(errorMessage)
     } finally {
       setGenerating(false)
     }
+  }
+
+  function handleAccept() {
+    if (!editor) {
+      toast.error('Editeur non disponible')
+      return
+    }
+    if (!outline) {
+      toast.error('Aucun plan a inserer')
+      return
+    }
+
+    // Over-optimization check (rough estimate, not precise scoring)
+    // Filter for scoring-positive terms (!is_to_avoid)
+    const scoringTerms = semanticTerms.filter((t) => !t.is_to_avoid)
+
+    if (scoringTerms.length > 0) {
+      // Normalize all outline titles
+      const normalizedOutlineText = outline
+        .map((section) => normalizeText(section.title))
+        .join(' ')
+
+      // Count matches (each term counted at most once)
+      let matchCount = 0
+      for (const term of scoringTerms) {
+        const normalizedTerm = normalizeText(term.display_term || term.term)
+        if (normalizedOutlineText.includes(normalizedTerm)) {
+          matchCount++
+        }
+      }
+
+      // Rough estimate: each match in headings adds ~3 occurrences when written
+      const estimatedScore = score + matchCount * 3
+
+      if (estimatedScore > 100) {
+        const confirmed = window.confirm(
+          `Attention : ce plan pourrait augmenter votre score semantique a environ ~${Math.round(estimatedScore)} (estimation approximative). Le seuil de sur-optimisation est 100. Voulez-vous continuer ?`
+        )
+        if (!confirmed) {
+          return
+        }
+      }
+    }
+
+    // Convert outline to HTML headings
+    const html = outline
+      .map((section) => {
+        if (section.level === 'h2') {
+          return `<h2>${section.title}</h2>`
+        } else {
+          return `<h3>${section.title}</h3>`
+        }
+      })
+      .join('\n')
+
+    // Insert into editor
+    editor.chain().focus().insertContent(html).run()
+
+    // Close dialog
+    setShowPreview(false)
+    setOutline(null)
+
+    toast.success("Plan insere dans l'editeur")
+  }
+
+  function handleReject() {
+    setShowPreview(false)
+    setOutline(null)
+    toast.info('Plan rejete')
   }
 
   return (
@@ -82,9 +156,29 @@ export function PlanPanel() {
           <CardContent className="py-2 px-3 flex items-start gap-2">
             <AlertTriangle className="size-4 text-amber-600 shrink-0 mt-0.5" />
             <p className="text-xs text-amber-700">
-              L&apos;editeur contient deja du contenu. La generation du plan remplacera le contenu actuel.
-              Videz l&apos;editeur avant de generer un nouveau plan.
+              L&apos;editeur contient deja du contenu. Videz l&apos;editeur avant de generer un nouveau plan.
             </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* No SERP warning */}
+      {serpPages.length === 0 && (
+        <Card size="sm" className="bg-blue-50 border-blue-200">
+          <CardContent className="py-2 px-3 flex items-start gap-2">
+            <AlertCircle className="size-4 text-blue-600 shrink-0 mt-0.5" />
+            <p className="text-xs text-blue-700">
+              Lancez d&apos;abord une analyse SERP pour generer un plan.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Error display */}
+      {error && (
+        <Card size="sm" className="bg-red-50 border-red-200">
+          <CardContent className="py-2 px-3">
+            <p className="text-xs text-red-700">{error}</p>
           </CardContent>
         </Card>
       )}
@@ -107,60 +201,6 @@ export function PlanPanel() {
           </>
         )}
       </Button>
-
-      {serpPages.length === 0 && (
-        <p className="text-xs text-muted-foreground text-center">
-          Lancez d&apos;abord une analyse SERP pour generer un plan.
-        </p>
-      )}
-
-      {/* Generated plan */}
-      {plan && (
-        <Card size="sm">
-          <CardHeader>
-            <CardTitle className="text-sm">Plan genere</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-1">
-              {plan.map((section, i) => (
-                <div
-                  key={i}
-                  className={`flex items-start gap-2 py-1.5 ${
-                    section.level === 'h3' ? 'pl-4' : ''
-                  }`}
-                >
-                  <Badge
-                    variant={section.level === 'h2' ? 'default' : 'secondary'}
-                    className="text-[10px] shrink-0 mt-0.5"
-                  >
-                    {section.level.toUpperCase()}
-                  </Badge>
-                  <div className="flex-1 min-w-0">
-                    <span className={`text-sm ${section.level === 'h2' ? 'font-semibold' : ''}`}>
-                      {section.title}
-                    </span>
-                    {section.keywords.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {section.keywords.map((kw) => (
-                          <Badge key={kw} variant="outline" className="text-[10px]">
-                            {kw}
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <Separator className="my-3" />
-
-            <Button size="sm" variant="outline" className="w-full">
-              Inserer dans l&apos;editeur
-            </Button>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Help section */}
       <Separator />
@@ -202,6 +242,63 @@ export function PlanPanel() {
           Des idees ou remarques ? contact@serpmantics.com
         </p>
       </div>
+
+      {/* Preview Dialog */}
+      <Dialog open={showPreview} onOpenChange={(open) => { if (!open) handleReject() }}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Apercu du plan genere</DialogTitle>
+            <DialogDescription>
+              Verifiez le plan puis acceptez pour l&apos;inserer dans l&apos;editeur ou rejetez pour le supprimer.
+            </DialogDescription>
+          </DialogHeader>
+
+          <ScrollArea className="max-h-[60vh]">
+            {outline && (
+              <div className="space-y-2 p-2">
+                {outline.map((section, i) => (
+                  <div
+                    key={i}
+                    className={`flex items-start gap-2 py-1.5 ${
+                      section.level === 'h3' ? 'pl-4' : ''
+                    }`}
+                  >
+                    <Badge
+                      variant={section.level === 'h2' ? 'default' : 'secondary'}
+                      className="text-[10px] shrink-0 mt-0.5"
+                    >
+                      {section.level.toUpperCase()}
+                    </Badge>
+                    <div className="flex-1 min-w-0">
+                      <span className={`text-sm ${section.level === 'h2' ? 'font-semibold' : ''}`}>
+                        {section.title}
+                      </span>
+                      {section.keywords && section.keywords.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {section.keywords.slice(0, 3).map((kw, kwIdx) => (
+                            <Badge key={kwIdx} variant="outline" className="text-[10px]">
+                              {kw}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </ScrollArea>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={handleReject}>
+              Rejeter
+            </Button>
+            <Button onClick={handleAccept}>
+              Accepter & Inserer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
