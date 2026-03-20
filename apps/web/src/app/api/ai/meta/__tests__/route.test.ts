@@ -140,8 +140,8 @@ describe('POST /api/ai/meta', () => {
     const mockSuggestions = {
       suggestions: [
         {
-          title: 'Valid Title Length Here',
-          description: 'Valid description with proper length that meets the requirements for SEO meta description standards.',
+          title: 'Valid Title Length Here for SEO',
+          description: 'This is a valid description with proper length that meets all the requirements for SEO meta description character count standards.',
         },
         {
           title: 'Too short',
@@ -149,17 +149,26 @@ describe('POST /api/ai/meta', () => {
         },
         {
           title: 'This title is way too long and exceeds the maximum character limit allowed for SEO titles in search engines',
-          description: 'This description is also way too long and exceeds the maximum character limit allowed for SEO meta descriptions in search engine results pages which typically display only the first 158 characters.',
+          description: 'This description is also way too long and exceeds the maximum character limit allowed for SEO meta descriptions in search engine results pages which typically display only the first 158 characters and then gets truncated.',
         },
       ],
     }
 
-    vi.mocked(executePrompt).mockResolvedValue(
-      mockAiResponse(JSON.stringify(mockSuggestions)) as never
-    )
+    vi.mocked(executePrompt).mockImplementation(async (options) => {
+      if (options.onFinish) {
+        await options.onFinish({
+          text: JSON.stringify(mockSuggestions),
+          usage: { promptTokens: 100, completionTokens: 50, totalTokens: 150 },
+          finishReason: 'stop',
+        })
+      }
+      return mockAiResponse(JSON.stringify(mockSuggestions)) as never
+    })
 
     const insertSpy = vi.fn().mockResolvedValue({ error: null })
-    mockSupabase.insert = insertSpy
+    mockSupabase.from = vi.fn().mockReturnValue({
+      insert: insertSpy,
+    })
 
     const request = new Request('http://localhost/api/ai/meta', {
       method: 'POST',
@@ -175,8 +184,9 @@ describe('POST /api/ai/meta', () => {
     const json = await response.json()
 
     // Only the first suggestion should pass validation (title 30-70 chars, desc 80-200 chars)
+    expect(response.status).toBe(200)
     expect(json.suggestions).toHaveLength(1)
-    expect(json.suggestions[0].title).toBe('Valid Title Length Here')
+    expect(json.suggestions[0].title).toBe('Valid Title Length Here for SEO')
   })
 
   it('should return 500 when AI returns invalid structure', async () => {
