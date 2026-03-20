@@ -6,6 +6,7 @@ import { createBrowserClient } from '@supabase/ssr'
 import { GuideCard } from '@/components/dashboard/guide-card'
 import { CreateGuideDialog } from '@/components/dashboard/create-guide-dialog'
 import { TextRazorUsageWidget } from '@/components/dashboard/textrazor-usage'
+import { SerpApiUsageWidget } from '@/components/dashboard/serpapi-usage'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
 import { ErrorBoundary } from '@/components/error-boundary'
@@ -73,9 +74,10 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* TextRazor Usage Widget */}
-      <div className="mb-6">
+      {/* API Usage Widgets */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         <TextRazorUsageWidget />
+        <SerpApiUsageWidget />
       </div>
 
       <ErrorBoundary>

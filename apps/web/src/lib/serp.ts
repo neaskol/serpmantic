@@ -1,5 +1,6 @@
 import { getJson } from 'serpapi'
 import { logger } from './logger'
+import { trackSerpApiRequest } from './serpapi-tracker'
 
 export interface SerpResult {
   position: number
@@ -34,6 +35,9 @@ export async function fetchSerpResults(keyword: string, language: string, search
     }
 
     const data = await getJson('google', params)
+
+    // Track SerpAPI usage
+    trackSerpApiRequest()
 
     const results: SerpResult[] = (data.organic_results || [])
       .filter((r: { link: string }) => {
