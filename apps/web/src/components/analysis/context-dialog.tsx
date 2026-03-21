@@ -133,10 +133,10 @@ export function ContextDialog({ open, onOpenChange }: ContextDialogProps) {
                         </p>
                       </div>
                       <div className="flex gap-1 shrink-0">
-                        <Button size="icon-xs" variant="ghost" onClick={() => handleEdit(ctx)}>
+                        <Button size="icon-xs" variant="ghost" onClick={() => handleEdit(ctx)} aria-label="Modifier le contexte">
                           <Pencil className="size-3" />
                         </Button>
-                        <Button size="icon-xs" variant="ghost" onClick={() => setDeletingId(ctx.id)}>
+                        <Button size="icon-xs" variant="ghost" onClick={() => setDeletingId(ctx.id)} aria-label="Supprimer le contexte">
                           <Trash2 className="size-3 text-destructive" />
                         </Button>
                       </div>
