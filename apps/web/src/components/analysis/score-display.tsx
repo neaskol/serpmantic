@@ -29,7 +29,7 @@ export function ScoreDisplay({ loading = false }: { loading?: boolean }) {
   const percentage = Math.round((score / 120) * 100)
 
   return (
-    <div className="p-4 border rounded-lg">
+    <div className="p-4 border rounded-lg" role="status" aria-label={`Score semantique: ${score} sur 120, ${label}`}>
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-baseline gap-2">
           <span className="text-3xl font-bold" style={{ color }}>{score}</span>
