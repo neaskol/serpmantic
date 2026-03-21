@@ -277,7 +277,8 @@ export function AssistantPanel() {
                     variant="ghost"
                     onClick={() => handleExecute(prompt)}
                     disabled={status !== 'idle' || !guide}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0 mt-0.5"
+                    className="shrink-0 mt-0.5"
+                    aria-label="Executer le prompt"
                   >
                     <Play className="size-3" />
                   </Button>
