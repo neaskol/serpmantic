@@ -83,13 +83,11 @@ export function PlanPanel() {
       if (!res.ok) {
         const errData = await res.json().catch(() => ({ error: 'Erreur inconnue' }))
 
-        let fullError = errData.error || `HTTP ${res.status}`
-        if (errData.message) fullError += `\n\nMessage: ${errData.message}`
-        if (errData.details) fullError += `\n\nDetails: ${JSON.stringify(errData.details, null, 2)}`
-        if (errData.requestId) fullError += `\n\nRequest ID: ${errData.requestId}`
-        fullError += `\n\nFull server response:\n${JSON.stringify(errData, null, 2)}`
-
-        throw new Error(fullError)
+        const userMessage = errData.message || errData.error || `Erreur serveur (${res.status})`
+        if (process.env.NODE_ENV === 'development') {
+          console.error('[Plan Generation] Full error:', errData)
+        }
+        throw new Error(userMessage)
       }
 
       const data = await res.json()
@@ -275,14 +273,21 @@ export function PlanPanel() {
       {/* Error display */}
       {error && (
         <Card size="sm" className="bg-red-50 border-red-200">
-          <CardContent className="py-3 px-3">
-            <p className="text-xs font-semibold text-red-800 mb-2">Erreur lors de la generation du plan</p>
-            <pre className="text-xs text-red-700 whitespace-pre-wrap font-mono bg-red-100 p-2 rounded overflow-auto max-h-40">
-              {error}
-            </pre>
-            <p className="text-xs text-red-600 mt-2">
-              Ouvrez la console du navigateur (F12) pour plus de details.
-            </p>
+          <CardContent className="py-2 px-3 flex items-start gap-2">
+            <AlertCircle className="size-4 text-red-600 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-xs font-medium text-red-800">{error}</p>
+              <Button
+                size="xs"
+                variant="outline"
+                className="mt-1.5 text-red-700"
+                onClick={handleGenerate}
+                disabled={generating}
+              >
+                <RefreshCw className="size-3" />
+                Reessayer
+              </Button>
+            </div>
           </CardContent>
         </Card>
       )}
