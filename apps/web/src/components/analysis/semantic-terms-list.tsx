@@ -5,7 +5,7 @@ import { useGuideStore } from '@/stores/guide-store'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { ScrollArea } from '@/components/ui/scroll-area'
+
 import { Skeleton } from '@/components/ui/skeleton'
 import { Search } from 'lucide-react'
 
@@ -92,7 +92,7 @@ export function SemanticTermsList({ loading = false }: { loading?: boolean }) {
         </div>
       </div>
 
-      <ScrollArea className="h-[400px]">
+      <div className="max-h-[60vh] overflow-y-auto">
         <div className="space-y-1 px-4 pb-4">
           {filtered.map((ts) => (
             <div
@@ -130,7 +130,7 @@ export function SemanticTermsList({ loading = false }: { loading?: boolean }) {
             <p className="text-sm text-muted-foreground text-center py-4">Aucune expression a afficher.</p>
           )}
         </div>
-      </ScrollArea>
+      </div>
     </div>
   )
 }
