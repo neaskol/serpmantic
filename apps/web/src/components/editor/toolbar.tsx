@@ -46,10 +46,10 @@ export function Toolbar({ editor }: ToolbarProps) {
   return (
     <div className="flex items-center gap-0.5 flex-wrap border-b p-2 bg-white sticky top-0 z-10">
       {/* Undo/Redo */}
-      <Button variant="ghost" size="sm" onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()}>
+      <Button variant="ghost" size="sm" onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()} aria-label="Annuler (Ctrl+Z)">
         <Undo size={iconSize} />
       </Button>
-      <Button variant="ghost" size="sm" onClick={() => editor.chain().focus().redo().run()} disabled={!editor.can().redo()}>
+      <Button variant="ghost" size="sm" onClick={() => editor.chain().focus().redo().run()} disabled={!editor.can().redo()} aria-label="Retablir (Ctrl+Y)">
         <Redo size={iconSize} />
       </Button>
 
@@ -65,6 +65,8 @@ export function Toolbar({ editor }: ToolbarProps) {
             size="sm"
             onClick={() => editor.chain().focus().toggleHeading({ level }).run()}
             className={editor.isActive('heading', { level }) ? 'bg-muted' : ''}
+            aria-label={`Titre H${level}`}
+            aria-pressed={editor.isActive('heading', { level })}
           >
             <Icon size={iconSize} />
           </Button>
@@ -75,6 +77,8 @@ export function Toolbar({ editor }: ToolbarProps) {
         size="sm"
         onClick={() => editor.chain().focus().setParagraph().run()}
         className={editor.isActive('paragraph') ? 'bg-muted' : ''}
+        aria-label="Paragraphe"
+        aria-pressed={editor.isActive('paragraph')}
       >
         <Type size={iconSize} />
       </Button>
@@ -82,19 +86,19 @@ export function Toolbar({ editor }: ToolbarProps) {
       <Separator orientation="vertical" className="h-6 mx-1" />
 
       {/* Formatting */}
-      <Button variant="ghost" size="sm" onClick={() => editor.chain().focus().toggleBold().run()} className={editor.isActive('bold') ? 'bg-muted' : ''}>
+      <Button variant="ghost" size="sm" onClick={() => editor.chain().focus().toggleBold().run()} className={editor.isActive('bold') ? 'bg-muted' : ''} aria-label="Gras (Ctrl+B)" aria-pressed={editor.isActive('bold')}>
         <Bold size={iconSize} />
       </Button>
-      <Button variant="ghost" size="sm" onClick={() => editor.chain().focus().toggleItalic().run()} className={editor.isActive('italic') ? 'bg-muted' : ''}>
+      <Button variant="ghost" size="sm" onClick={() => editor.chain().focus().toggleItalic().run()} className={editor.isActive('italic') ? 'bg-muted' : ''} aria-label="Italique (Ctrl+I)" aria-pressed={editor.isActive('italic')}>
         <Italic size={iconSize} />
       </Button>
-      <Button variant="ghost" size="sm" onClick={() => editor.chain().focus().toggleUnderline().run()} className={editor.isActive('underline') ? 'bg-muted' : ''}>
+      <Button variant="ghost" size="sm" onClick={() => editor.chain().focus().toggleUnderline().run()} className={editor.isActive('underline') ? 'bg-muted' : ''} aria-label="Souligne (Ctrl+U)" aria-pressed={editor.isActive('underline')}>
         <Underline size={iconSize} />
       </Button>
 
       {/* Text Color Popover */}
       <Popover>
-        <PopoverTrigger render={<Button variant="ghost" size="sm" />}>
+        <PopoverTrigger render={<Button variant="ghost" size="sm" aria-label="Couleur du texte" />}>
           <Palette size={iconSize} />
         </PopoverTrigger>
         <PopoverContent className="w-auto p-3" align="start">
@@ -107,6 +111,7 @@ export function Toolbar({ editor }: ToolbarProps) {
                 style={{ backgroundColor: color.value }}
                 onClick={() => editor.chain().focus().setColor(color.value).run()}
                 title={color.name}
+                aria-label={color.name}
               />
             ))}
           </div>
@@ -115,7 +120,7 @@ export function Toolbar({ editor }: ToolbarProps) {
 
       {/* Highlight Color Popover */}
       <Popover>
-        <PopoverTrigger render={<Button variant="ghost" size="sm" className={editor.isActive('highlight') ? 'bg-muted' : ''} />}>
+        <PopoverTrigger render={<Button variant="ghost" size="sm" className={editor.isActive('highlight') ? 'bg-muted' : ''} aria-label="Surlignage" aria-pressed={editor.isActive('highlight')} />}>
           <Highlighter size={iconSize} />
         </PopoverTrigger>
         <PopoverContent className="w-auto p-3" align="start">
@@ -128,6 +133,7 @@ export function Toolbar({ editor }: ToolbarProps) {
                 style={{ backgroundColor: color.value }}
                 onClick={() => editor.chain().focus().toggleHighlight({ color: color.value }).run()}
                 title={color.name}
+                aria-label={color.name}
               />
             ))}
           </div>
@@ -145,30 +151,30 @@ export function Toolbar({ editor }: ToolbarProps) {
       <Separator orientation="vertical" className="h-6 mx-1" />
 
       {/* Alignment */}
-      <Button variant="ghost" size="sm" onClick={() => editor.chain().focus().setTextAlign('left').run()} className={editor.isActive({ textAlign: 'left' }) ? 'bg-muted' : ''}>
+      <Button variant="ghost" size="sm" onClick={() => editor.chain().focus().setTextAlign('left').run()} className={editor.isActive({ textAlign: 'left' }) ? 'bg-muted' : ''} aria-label="Aligner a gauche" aria-pressed={editor.isActive({ textAlign: 'left' })}>
         <AlignLeft size={iconSize} />
       </Button>
-      <Button variant="ghost" size="sm" onClick={() => editor.chain().focus().setTextAlign('center').run()} className={editor.isActive({ textAlign: 'center' }) ? 'bg-muted' : ''}>
+      <Button variant="ghost" size="sm" onClick={() => editor.chain().focus().setTextAlign('center').run()} className={editor.isActive({ textAlign: 'center' }) ? 'bg-muted' : ''} aria-label="Centrer" aria-pressed={editor.isActive({ textAlign: 'center' })}>
         <AlignCenter size={iconSize} />
       </Button>
-      <Button variant="ghost" size="sm" onClick={() => editor.chain().focus().setTextAlign('right').run()} className={editor.isActive({ textAlign: 'right' }) ? 'bg-muted' : ''}>
+      <Button variant="ghost" size="sm" onClick={() => editor.chain().focus().setTextAlign('right').run()} className={editor.isActive({ textAlign: 'right' }) ? 'bg-muted' : ''} aria-label="Aligner a droite" aria-pressed={editor.isActive({ textAlign: 'right' })}>
         <AlignRight size={iconSize} />
       </Button>
 
       <Separator orientation="vertical" className="h-6 mx-1" />
 
       {/* Lists */}
-      <Button variant="ghost" size="sm" onClick={() => editor.chain().focus().toggleBulletList().run()} className={editor.isActive('bulletList') ? 'bg-muted' : ''}>
+      <Button variant="ghost" size="sm" onClick={() => editor.chain().focus().toggleBulletList().run()} className={editor.isActive('bulletList') ? 'bg-muted' : ''} aria-label="Liste a puces" aria-pressed={editor.isActive('bulletList')}>
         <List size={iconSize} />
       </Button>
-      <Button variant="ghost" size="sm" onClick={() => editor.chain().focus().toggleOrderedList().run()} className={editor.isActive('orderedList') ? 'bg-muted' : ''}>
+      <Button variant="ghost" size="sm" onClick={() => editor.chain().focus().toggleOrderedList().run()} className={editor.isActive('orderedList') ? 'bg-muted' : ''} aria-label="Liste numerotee" aria-pressed={editor.isActive('orderedList')}>
         <ListOrdered size={iconSize} />
       </Button>
 
       <Separator orientation="vertical" className="h-6 mx-1" />
 
       {/* Table */}
-      <Button variant="ghost" size="sm" onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}>
+      <Button variant="ghost" size="sm" onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} aria-label="Inserer un tableau">
         <Table size={iconSize} />
       </Button>
 
@@ -176,7 +182,7 @@ export function Toolbar({ editor }: ToolbarProps) {
       <Button variant="ghost" size="sm" onClick={() => {
         const url = window.prompt('URL de l\'image')
         if (url) editor.chain().focus().setImage({ src: url }).run()
-      }}>
+      }} aria-label="Inserer une image">
         <ImageIcon size={iconSize} />
       </Button>
 
@@ -188,7 +194,7 @@ export function Toolbar({ editor }: ToolbarProps) {
           const url = window.prompt('URL du lien')
           if (url) editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run()
         }
-      }} className={editor.isActive('link') ? 'bg-muted' : ''}>
+      }} className={editor.isActive('link') ? 'bg-muted' : ''} aria-label="Inserer un lien" aria-pressed={editor.isActive('link')}>
         <Link size={iconSize} />
       </Button>
     </div>
