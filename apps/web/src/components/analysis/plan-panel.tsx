@@ -1,15 +1,29 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useGuideStore } from '@/stores/guide-store'
 import { useEditorStore } from '@/stores/editor-store'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { FileText, Sparkles, AlertTriangle, BookOpen, ChevronDown, ChevronUp, AlertCircle } from 'lucide-react'
+import {
+  FileText,
+  Sparkles,
+  AlertTriangle,
+  BookOpen,
+  ChevronDown,
+  ChevronUp,
+  AlertCircle,
+  X,
+  ArrowUp,
+  ArrowDown,
+  Plus,
+  ArrowRight,
+  Trash2,
+} from 'lucide-react'
 import { toast } from 'sonner'
 import type { OutlineSection } from '@/types/database'
 
@@ -30,9 +44,11 @@ export function PlanPanel() {
 
   const [generating, setGenerating] = useState(false)
   const [outline, setOutline] = useState<OutlineSection[] | null>(null)
-  const [showPreview, setShowPreview] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showHelp, setShowHelp] = useState(false)
+  const [showAddForm, setShowAddForm] = useState(false)
+  const [newSectionTitle, setNewSectionTitle] = useState('')
+  const [newSectionLevel, setNewSectionLevel] = useState<'h2' | 'h3'>('h2')
 
   const editorHasContent = plainText.trim().length > 50
 
@@ -46,35 +62,19 @@ export function PlanPanel() {
     setError(null)
 
     try {
-      console.log('[Plan] Starting generation for guide:', guide.id)
-
       const res = await fetch('/api/ai/plan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ guideId: guide.id }),
       })
 
-      console.log('[Plan] Response status:', res.status, res.statusText)
-
       if (!res.ok) {
         const errData = await res.json().catch(() => ({ error: 'Erreur inconnue' }))
-        console.error('[Plan] Error response data:', errData)
 
-        // Always show full error details in development
         let fullError = errData.error || `HTTP ${res.status}`
-
-        // Add all available error information
-        if (errData.message) {
-          fullError += `\n\nMessage: ${errData.message}`
-        }
-        if (errData.details) {
-          fullError += `\n\nDetails: ${JSON.stringify(errData.details, null, 2)}`
-        }
-        if (errData.requestId) {
-          fullError += `\n\nRequest ID: ${errData.requestId}`
-        }
-
-        // Add raw response for debugging
+        if (errData.message) fullError += `\n\nMessage: ${errData.message}`
+        if (errData.details) fullError += `\n\nDetails: ${JSON.stringify(errData.details, null, 2)}`
+        if (errData.requestId) fullError += `\n\nRequest ID: ${errData.requestId}`
         fullError += `\n\nFull server response:\n${JSON.stringify(errData, null, 2)}`
 
         throw new Error(fullError)
@@ -82,13 +82,11 @@ export function PlanPanel() {
 
       const data = await res.json()
       setOutline(data.outline)
-      setShowPreview(true)
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Erreur lors de la generation'
       setError(errorMessage)
       toast.error(errorMessage)
 
-      // Log full error to console in development
       if (process.env.NODE_ENV === 'development') {
         console.error('[Plan Generation Error]', err)
       }
@@ -97,27 +95,86 @@ export function PlanPanel() {
     }
   }
 
-  function handleAccept() {
+  // --- Inline editing handlers ---
+
+  const handleUpdateTitle = useCallback((index: number, newTitle: string) => {
+    setOutline((prev) => {
+      if (!prev) return prev
+      const updated = [...prev]
+      updated[index] = { ...updated[index], title: newTitle }
+      return updated
+    })
+  }, [])
+
+  const handleToggleLevel = useCallback((index: number) => {
+    setOutline((prev) => {
+      if (!prev) return prev
+      const updated = [...prev]
+      const current = updated[index]
+      updated[index] = { ...current, level: current.level === 'h2' ? 'h3' : 'h2' }
+      return updated
+    })
+  }, [])
+
+  const handleMoveUp = useCallback((index: number) => {
+    if (index === 0) return
+    setOutline((prev) => {
+      if (!prev) return prev
+      const updated = [...prev]
+      ;[updated[index - 1], updated[index]] = [updated[index], updated[index - 1]]
+      return updated
+    })
+  }, [])
+
+  const handleMoveDown = useCallback((index: number) => {
+    setOutline((prev) => {
+      if (!prev || index >= prev.length - 1) return prev
+      const updated = [...prev]
+      ;[updated[index], updated[index + 1]] = [updated[index + 1], updated[index]]
+      return updated
+    })
+  }, [])
+
+  const handleDelete = useCallback((index: number) => {
+    setOutline((prev) => {
+      if (!prev) return prev
+      const updated = prev.filter((_, i) => i !== index)
+      return updated.length === 0 ? null : updated
+    })
+  }, [])
+
+  const handleAddSection = useCallback(() => {
+    if (!newSectionTitle.trim()) return
+    const newSection: OutlineSection = {
+      level: newSectionLevel,
+      title: newSectionTitle.trim(),
+      keywords: [],
+    }
+    setOutline((prev) => (prev ? [...prev, newSection] : [newSection]))
+    setNewSectionTitle('')
+    setShowAddForm(false)
+  }, [newSectionTitle, newSectionLevel])
+
+  // --- Insert into editor ---
+
+  function handleInsertToEditor() {
     if (!editor) {
       toast.error('Editeur non disponible')
       return
     }
-    if (!outline) {
+    if (!outline || outline.length === 0) {
       toast.error('Aucun plan a inserer')
       return
     }
 
-    // Over-optimization check (rough estimate, not precise scoring)
-    // Filter for scoring-positive terms (!is_to_avoid)
+    // Over-optimization check
     const scoringTerms = semanticTerms.filter((t) => !t.is_to_avoid)
 
     if (scoringTerms.length > 0) {
-      // Normalize all outline titles
       const normalizedOutlineText = outline
         .map((section) => normalizeText(section.title))
         .join(' ')
 
-      // Count matches (each term counted at most once)
       let matchCount = 0
       for (const term of scoringTerms) {
         const normalizedTerm = normalizeText(term.display_term || term.term)
@@ -126,32 +183,24 @@ export function PlanPanel() {
         }
       }
 
-      // Rough estimate: each match in headings adds ~3 occurrences when written
       const estimatedScore = score + matchCount * 3
 
       if (estimatedScore > 100) {
         const confirmed = window.confirm(
           `Attention : ce plan pourrait augmenter votre score semantique a environ ~${Math.round(estimatedScore)} (estimation approximative). Le seuil de sur-optimisation est 100. Voulez-vous continuer ?`
         )
-        if (!confirmed) {
-          return
-        }
+        if (!confirmed) return
       }
     }
 
-    // Convert outline to HTML structure with paragraphs for editing
+    // Convert outline to HTML
     const htmlParts: string[] = []
-
-    outline.forEach((section, index) => {
-      // Add heading
+    outline.forEach((section) => {
       if (section.level === 'h2') {
         htmlParts.push(`<h2>${section.title}</h2>`)
       } else {
         htmlParts.push(`<h3>${section.title}</h3>`)
       }
-
-      // Add empty paragraph after each heading for content writing
-      // Add 2 paragraphs after H2 for more writing space, 1 after H3
       const paragraphCount = section.level === 'h2' ? 2 : 1
       for (let i = 0; i < paragraphCount; i++) {
         htmlParts.push('<p></p>')
@@ -159,21 +208,15 @@ export function PlanPanel() {
     })
 
     const html = htmlParts.join('\n')
-
-    // Insert into editor
     editor.chain().focus().insertContent(html).run()
 
-    // Close dialog
-    setShowPreview(false)
     setOutline(null)
-
     toast.success("Plan insere dans l'editeur")
   }
 
-  function handleReject() {
-    setShowPreview(false)
+  function handleClearOutline() {
     setOutline(null)
-    toast.info('Plan rejete')
+    toast.info('Plan supprime')
   }
 
   return (
@@ -189,7 +232,7 @@ export function PlanPanel() {
       </p>
 
       {/* Warning if editor has content */}
-      {editorHasContent && (
+      {editorHasContent && !outline && (
         <Card size="sm" className="bg-amber-50 border-amber-200">
           <CardContent className="py-2 px-3 flex items-start gap-2">
             <AlertTriangle className="size-4 text-amber-600 shrink-0 mt-0.5" />
@@ -216,35 +259,201 @@ export function PlanPanel() {
       {error && (
         <Card size="sm" className="bg-red-50 border-red-200">
           <CardContent className="py-3 px-3">
-            <p className="text-xs font-semibold text-red-800 mb-2">Erreur lors de la génération du plan</p>
+            <p className="text-xs font-semibold text-red-800 mb-2">Erreur lors de la generation du plan</p>
             <pre className="text-xs text-red-700 whitespace-pre-wrap font-mono bg-red-100 p-2 rounded overflow-auto max-h-40">
               {error}
             </pre>
             <p className="text-xs text-red-600 mt-2">
-              Ouvrez la console du navigateur (F12) pour plus de détails.
+              Ouvrez la console du navigateur (F12) pour plus de details.
             </p>
           </CardContent>
         </Card>
       )}
 
-      {/* Generate button */}
-      <Button
-        onClick={handleGenerate}
-        disabled={generating || !guide || editorHasContent || serpPages.length === 0}
-        className="w-full"
-      >
-        {generating ? (
-          <>
-            <span className="size-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            Generation en cours...
-          </>
-        ) : (
-          <>
-            <Sparkles className="size-4" />
-            Generer le plan optimal
-          </>
-        )}
-      </Button>
+      {/* Generate button — hidden when outline exists */}
+      {!outline && (
+        <Button
+          onClick={handleGenerate}
+          disabled={generating || !guide || editorHasContent || serpPages.length === 0}
+          className="w-full"
+        >
+          {generating ? (
+            <>
+              <span className="size-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              Generation en cours...
+            </>
+          ) : (
+            <>
+              <Sparkles className="size-4" />
+              Generer le plan optimal
+            </>
+          )}
+        </Button>
+      )}
+
+      {/* ========== INLINE EDITABLE PLAN PREVIEW ========== */}
+      {outline && outline.length > 0 && (
+        <>
+          <Separator />
+
+          {/* Plan header */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <h4 className="text-sm font-semibold">Plan genere</h4>
+              <Badge variant="secondary" className="text-[10px]">
+                {outline.length} sections
+              </Badge>
+            </div>
+          </div>
+
+          {/* Editable section list */}
+          <ScrollArea className="max-h-[50vh]">
+            <div className="space-y-1">
+              {outline.map((section, index) => (
+                <div
+                  key={index}
+                  className={`group flex items-center gap-1.5 rounded-md px-1.5 py-1 hover:bg-muted/50 transition-colors ${
+                    section.level === 'h3' ? 'ml-4' : ''
+                  }`}
+                >
+                  {/* Level badge — clickable to toggle */}
+                  <button
+                    onClick={() => handleToggleLevel(index)}
+                    title="Cliquez pour basculer H2/H3"
+                    className="shrink-0"
+                  >
+                    <Badge
+                      variant={section.level === 'h2' ? 'default' : 'secondary'}
+                      className="text-[10px] cursor-pointer hover:opacity-80 transition-opacity"
+                    >
+                      {section.level.toUpperCase()}
+                    </Badge>
+                  </button>
+
+                  {/* Editable title */}
+                  <Input
+                    value={section.title}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      handleUpdateTitle(index, e.target.value)
+                    }
+                    className={`h-7 text-xs border-transparent bg-transparent px-1.5 focus-visible:border-input focus-visible:bg-background ${
+                      section.level === 'h2' ? 'font-semibold' : ''
+                    }`}
+                  />
+
+                  {/* Action buttons — visible on hover */}
+                  <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                    <Button
+                      variant="ghost"
+                      size="icon-xs"
+                      onClick={() => handleMoveUp(index)}
+                      disabled={index === 0}
+                      title="Monter"
+                    >
+                      <ArrowUp className="size-3" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon-xs"
+                      onClick={() => handleMoveDown(index)}
+                      disabled={index === outline.length - 1}
+                      title="Descendre"
+                    >
+                      <ArrowDown className="size-3" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon-xs"
+                      onClick={() => handleDelete(index)}
+                      title="Supprimer"
+                      className="text-destructive hover:text-destructive"
+                    >
+                      <X className="size-3" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
+
+          {/* Add section */}
+          {showAddForm ? (
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => setNewSectionLevel(newSectionLevel === 'h2' ? 'h3' : 'h2')}
+                className="shrink-0"
+              >
+                <Badge
+                  variant={newSectionLevel === 'h2' ? 'default' : 'secondary'}
+                  className="text-[10px] cursor-pointer hover:opacity-80 transition-opacity"
+                >
+                  {newSectionLevel.toUpperCase()}
+                </Badge>
+              </button>
+              <Input
+                value={newSectionTitle}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewSectionTitle(e.target.value)}
+                onKeyDown={(e: React.KeyboardEvent) => {
+                  if (e.key === 'Enter') handleAddSection()
+                  if (e.key === 'Escape') {
+                    setShowAddForm(false)
+                    setNewSectionTitle('')
+                  }
+                }}
+                placeholder="Titre de la section..."
+                className="h-7 text-xs"
+                autoFocus
+              />
+              <Button
+                variant="ghost"
+                size="icon-xs"
+                onClick={handleAddSection}
+                disabled={!newSectionTitle.trim()}
+                title="Ajouter"
+              >
+                <Plus className="size-3" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon-xs"
+                onClick={() => {
+                  setShowAddForm(false)
+                  setNewSectionTitle('')
+                }}
+                title="Annuler"
+              >
+                <X className="size-3" />
+              </Button>
+            </div>
+          ) : (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full text-xs text-muted-foreground"
+              onClick={() => setShowAddForm(true)}
+            >
+              <Plus className="size-3" />
+              Ajouter une section
+            </Button>
+          )}
+
+          {/* Action buttons */}
+          <div className="flex gap-2">
+            <Button onClick={handleInsertToEditor} className="flex-1" size="sm">
+              <ArrowRight className="size-4" />
+              Inserer dans l&apos;editeur
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={handleClearOutline}
+              title="Supprimer le plan"
+            >
+              <Trash2 className="size-4" />
+            </Button>
+          </div>
+        </>
+      )}
 
       {/* Help section */}
       <Separator />
@@ -272,7 +481,7 @@ export function PlanPanel() {
             <ol className="text-xs text-muted-foreground space-y-1 list-decimal pl-4">
               <li>Videz l&apos;editeur</li>
               <li>Cliquez sur &quot;Generer le plan optimal&quot;</li>
-              <li>Revisez et ajustez le plan genere</li>
+              <li>Modifiez le plan directement (renommer, reordonner, supprimer)</li>
               <li>Inserez-le dans l&apos;editeur</li>
               <li>Redigez votre contenu section par section</li>
             </ol>
@@ -286,63 +495,6 @@ export function PlanPanel() {
           Des idees ou remarques ? contact@serpmantics.com
         </p>
       </div>
-
-      {/* Preview Dialog */}
-      <Dialog open={showPreview} onOpenChange={(open) => { if (!open) handleReject() }}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Apercu du plan genere</DialogTitle>
-            <DialogDescription>
-              Verifiez le plan puis acceptez pour l&apos;inserer dans l&apos;editeur ou rejetez pour le supprimer.
-            </DialogDescription>
-          </DialogHeader>
-
-          <ScrollArea className="max-h-[60vh]">
-            {outline && (
-              <div className="space-y-2 p-2">
-                {outline.map((section, i) => (
-                  <div
-                    key={i}
-                    className={`flex items-start gap-2 py-1.5 ${
-                      section.level === 'h3' ? 'pl-4' : ''
-                    }`}
-                  >
-                    <Badge
-                      variant={section.level === 'h2' ? 'default' : 'secondary'}
-                      className="text-[10px] shrink-0 mt-0.5"
-                    >
-                      {section.level.toUpperCase()}
-                    </Badge>
-                    <div className="flex-1 min-w-0">
-                      <span className={`text-sm ${section.level === 'h2' ? 'font-semibold' : ''}`}>
-                        {section.title}
-                      </span>
-                      {section.keywords && section.keywords.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {section.keywords.slice(0, 3).map((kw, kwIdx) => (
-                            <Badge key={kwIdx} variant="outline" className="text-[10px]">
-                              {kw}
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </ScrollArea>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={handleReject}>
-              Rejeter
-            </Button>
-            <Button onClick={handleAccept}>
-              Accepter & Inserer
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }
