@@ -37,7 +37,11 @@ export default function GuideEditorPage() {
   const guide = useGuideStore((s) => s.guide)
   const setGuide = useGuideStore((s) => s.setGuide)
   const setSerpData = useGuideStore((s) => s.setSerpData)
+  const clearSerpData = useGuideStore((s) => s.clearSerpData)
+  const recalculateScore = useGuideStore((s) => s.recalculateScore)
+  const semanticTerms = useGuideStore((s) => s.semanticTerms)
   const content = useEditorStore((s) => s.content)
+  const setInitialContent = useEditorStore((s) => s.setInitialContent)
   const [loading, setLoading] = useState(false)
   const [analyzing, setAnalyzing] = useState(false)
   const [analysisStep, setAnalysisStep] = useState<AnalysisStep>('idle')
@@ -53,9 +57,31 @@ export default function GuideEditorPage() {
       const res = await fetch(`/api/guides/${id}`)
       if (res.ok) {
         const data = await res.json()
+        console.log('[Guide Load] Data received:', {
+          hasGuide: !!data.guide,
+          hasAnalysis: !!data.analysis,
+          pagesCount: data.pages?.length || 0,
+          termsCount: data.terms?.length || 0,
+        })
         setGuide(data.guide)
-        if (data.analysis && data.pages && data.terms) {
-          setSerpData(data.analysis, data.pages, data.terms)
+        // Restore editor content from saved guide
+        if (data.guide.content && Object.keys(data.guide.content).length > 0) {
+          console.log('[Guide Load] Restoring editor content from database')
+          setInitialContent(data.guide.content)
+        }
+        if (data.analysis && data.terms?.length > 0) {
+          console.log('[Guide Load] Setting SERP data in store', {
+            analysisId: data.analysis.id,
+            pagesCount: data.pages?.length,
+            termsCount: data.terms?.length,
+          })
+          setSerpData(data.analysis, data.pages || [], data.terms)
+        } else {
+          console.log('[Guide Load] No SERP data found in database', {
+            analysis: data.analysis,
+            pages: data.pages?.length,
+            terms: data.terms?.length,
+          })
         }
       } else {
         toast.error('Impossible de charger le guide')
@@ -65,7 +91,17 @@ export default function GuideEditorPage() {
       setLoading(true)
       loadGuide().finally(() => setLoading(false))
     }
-  }, [id, setGuide, setSerpData])
+  }, [id, setGuide, setSerpData, setInitialContent])
+
+  // Recalculate score when SERP data becomes available (or changes)
+  // This ensures termStatuses and structuralMetrics are populated even with an empty editor
+  useEffect(() => {
+    if (semanticTerms.length > 0) {
+      const currentText = useEditorStore.getState().plainText
+      const currentContent = useEditorStore.getState().content
+      recalculateScore(currentText, currentContent as Record<string, unknown>)
+    }
+  }, [semanticTerms, recalculateScore])
 
   // Auto-save content with debounce
   useEffect(() => {
@@ -165,6 +201,7 @@ export default function GuideEditorPage() {
     setAnalysisStep('idle')
     setAnalysisError(undefined)
     setShowProgressDialog(true)
+    clearSerpData()
 
     // Normalize search engine to full URL if needed
     let searchEngineUrl = guide.search_engine

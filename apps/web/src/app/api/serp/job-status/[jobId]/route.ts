@@ -48,10 +48,11 @@ export async function GET(
         .single()
 
       if (analysis) {
+        const { serp_pages, semantic_terms, ...cleanAnalysis } = analysis
         analysisData = {
-          analysis,
-          pages: analysis.serp_pages || [],
-          terms: analysis.semantic_terms || [],
+          analysis: cleanAnalysis,
+          pages: serp_pages || [],
+          terms: semantic_terms || [],
         }
       }
     }

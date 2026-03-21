@@ -83,15 +83,29 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       throw new Error('Guide not found')
     }
 
-    // Transform nested structure for backward compatibility
-    const guide = data
-    const analysis = data.serp_analyses?.[0] || null
+    // Transform nested structure
+    // Supabase returns serp_analyses as object (not array) when guide_id has UNIQUE constraint
+    const { serp_analyses: rawAnalyses, ...guide } = data
+    const analysis = Array.isArray(rawAnalyses)
+      ? rawAnalyses[0] || null
+      : rawAnalyses || null
     const pages = analysis?.serp_pages || []
     const terms = analysis?.semantic_terms || []
 
-    logger.info('Guide retrieved', { guideId: id, requestId })
+    // Strip nested relations from analysis before sending (pages/terms sent separately)
+    const cleanAnalysis = analysis
+      ? { ...analysis, serp_pages: undefined, semantic_terms: undefined }
+      : null
 
-    return NextResponse.json({ guide, analysis, pages, terms })
+    logger.info('Guide retrieved', {
+      guideId: id,
+      hasAnalysis: !!analysis,
+      pagesCount: pages.length,
+      termsCount: terms.length,
+      requestId,
+    })
+
+    return NextResponse.json({ guide, analysis: cleanAnalysis, pages, terms })
   } catch (error) {
     const { id } = await params
     return handleApiError(error, {

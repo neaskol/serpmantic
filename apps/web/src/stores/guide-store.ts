@@ -25,6 +25,7 @@ interface GuideState {
   // Actions
   setGuide: (guide: Guide) => void
   setSerpData: (analysis: SerpAnalysis, pages: SerpPage[], terms: SemanticTerm[]) => void
+  clearSerpData: () => void
   recalculateScore: (plainText: string, content: Record<string, unknown>) => void
   setActiveTab: (tab: string) => void
   setTermFilter: (filter: TermFilter) => void
@@ -51,6 +52,17 @@ export const useGuideStore = create<GuideState>()((set, get) => ({
     serpAnalysis: analysis,
     serpPages: pages,
     semanticTerms: terms,
+  }),
+
+  clearSerpData: () => set({
+    serpAnalysis: null,
+    serpPages: [],
+    semanticTerms: [],
+    score: 0,
+    scoreLabel: 'Mauvais',
+    scoreColor: '#ef4444',
+    termStatuses: [],
+    structuralMetrics: { words: 0, headings: 0, paragraphs: 0, links: 0, images: 0, videos: 0, tables: 0, lists: 0 },
   }),
 
   recalculateScore: (plainText, content) => {
