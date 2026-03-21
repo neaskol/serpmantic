@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { type Editor } from '@tiptap/react'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
@@ -8,6 +9,14 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
 import {
   Bold, Italic, Underline, Heading1, Heading2, Heading3, Heading4,
   List, ListOrdered, Table, ImageIcon, Link, AlignLeft, AlignCenter,
@@ -39,6 +48,10 @@ const HIGHLIGHT_COLORS = [
 ]
 
 export function Toolbar({ editor }: ToolbarProps) {
+  const [imageDialogOpen, setImageDialogOpen] = useState(false)
+  const [linkDialogOpen, setLinkDialogOpen] = useState(false)
+  const [urlInput, setUrlInput] = useState('')
+
   if (!editor) return null
 
   const iconSize = 16
@@ -46,10 +59,10 @@ export function Toolbar({ editor }: ToolbarProps) {
   return (
     <div className="flex items-center gap-0.5 flex-wrap border-b p-2 bg-white sticky top-0 z-10">
       {/* Undo/Redo */}
-      <Button variant="ghost" size="sm" onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()} aria-label="Annuler (Ctrl+Z)">
+      <Button variant="ghost" size="sm" onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()} aria-label="Annuler (Ctrl+Z)" title="Annuler (Ctrl+Z)">
         <Undo size={iconSize} />
       </Button>
-      <Button variant="ghost" size="sm" onClick={() => editor.chain().focus().redo().run()} disabled={!editor.can().redo()} aria-label="Retablir (Ctrl+Y)">
+      <Button variant="ghost" size="sm" onClick={() => editor.chain().focus().redo().run()} disabled={!editor.can().redo()} aria-label="Retablir (Ctrl+Y)" title="Retablir (Ctrl+Y)">
         <Redo size={iconSize} />
       </Button>
 
@@ -86,13 +99,13 @@ export function Toolbar({ editor }: ToolbarProps) {
       <Separator orientation="vertical" className="h-6 mx-1" />
 
       {/* Formatting */}
-      <Button variant="ghost" size="sm" onClick={() => editor.chain().focus().toggleBold().run()} className={editor.isActive('bold') ? 'bg-muted' : ''} aria-label="Gras (Ctrl+B)" aria-pressed={editor.isActive('bold')}>
+      <Button variant="ghost" size="sm" onClick={() => editor.chain().focus().toggleBold().run()} className={editor.isActive('bold') ? 'bg-muted' : ''} aria-label="Gras (Ctrl+B)" aria-pressed={editor.isActive('bold')} title="Gras (Ctrl+B)">
         <Bold size={iconSize} />
       </Button>
-      <Button variant="ghost" size="sm" onClick={() => editor.chain().focus().toggleItalic().run()} className={editor.isActive('italic') ? 'bg-muted' : ''} aria-label="Italique (Ctrl+I)" aria-pressed={editor.isActive('italic')}>
+      <Button variant="ghost" size="sm" onClick={() => editor.chain().focus().toggleItalic().run()} className={editor.isActive('italic') ? 'bg-muted' : ''} aria-label="Italique (Ctrl+I)" aria-pressed={editor.isActive('italic')} title="Italique (Ctrl+I)">
         <Italic size={iconSize} />
       </Button>
-      <Button variant="ghost" size="sm" onClick={() => editor.chain().focus().toggleUnderline().run()} className={editor.isActive('underline') ? 'bg-muted' : ''} aria-label="Souligne (Ctrl+U)" aria-pressed={editor.isActive('underline')}>
+      <Button variant="ghost" size="sm" onClick={() => editor.chain().focus().toggleUnderline().run()} className={editor.isActive('underline') ? 'bg-muted' : ''} aria-label="Souligne (Ctrl+U)" aria-pressed={editor.isActive('underline')} title="Souligne (Ctrl+U)">
         <Underline size={iconSize} />
       </Button>
 
@@ -164,25 +177,22 @@ export function Toolbar({ editor }: ToolbarProps) {
       <Separator orientation="vertical" className="h-6 mx-1" />
 
       {/* Lists */}
-      <Button variant="ghost" size="sm" onClick={() => editor.chain().focus().toggleBulletList().run()} className={editor.isActive('bulletList') ? 'bg-muted' : ''} aria-label="Liste a puces" aria-pressed={editor.isActive('bulletList')}>
+      <Button variant="ghost" size="sm" onClick={() => editor.chain().focus().toggleBulletList().run()} className={editor.isActive('bulletList') ? 'bg-muted' : ''} aria-label="Liste a puces" aria-pressed={editor.isActive('bulletList')} title="Liste a puces">
         <List size={iconSize} />
       </Button>
-      <Button variant="ghost" size="sm" onClick={() => editor.chain().focus().toggleOrderedList().run()} className={editor.isActive('orderedList') ? 'bg-muted' : ''} aria-label="Liste numerotee" aria-pressed={editor.isActive('orderedList')}>
+      <Button variant="ghost" size="sm" onClick={() => editor.chain().focus().toggleOrderedList().run()} className={editor.isActive('orderedList') ? 'bg-muted' : ''} aria-label="Liste numerotee" aria-pressed={editor.isActive('orderedList')} title="Liste numerotee">
         <ListOrdered size={iconSize} />
       </Button>
 
       <Separator orientation="vertical" className="h-6 mx-1" />
 
       {/* Table */}
-      <Button variant="ghost" size="sm" onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} aria-label="Inserer un tableau">
+      <Button variant="ghost" size="sm" onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} aria-label="Inserer un tableau" title="Inserer un tableau">
         <Table size={iconSize} />
       </Button>
 
       {/* Image */}
-      <Button variant="ghost" size="sm" onClick={() => {
-        const url = window.prompt('URL de l\'image')
-        if (url) editor.chain().focus().setImage({ src: url }).run()
-      }} aria-label="Inserer une image">
+      <Button variant="ghost" size="sm" onClick={() => { setUrlInput(''); setImageDialogOpen(true) }} aria-label="Inserer une image" title="Inserer une image">
         <ImageIcon size={iconSize} />
       </Button>
 
@@ -191,12 +201,94 @@ export function Toolbar({ editor }: ToolbarProps) {
         if (editor.isActive('link')) {
           editor.chain().focus().unsetLink().run()
         } else {
-          const url = window.prompt('URL du lien')
-          if (url) editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run()
+          setUrlInput('')
+          setLinkDialogOpen(true)
         }
-      }} className={editor.isActive('link') ? 'bg-muted' : ''} aria-label="Inserer un lien" aria-pressed={editor.isActive('link')}>
+      }} className={editor.isActive('link') ? 'bg-muted' : ''} aria-label="Inserer un lien" aria-pressed={editor.isActive('link')} title="Inserer/supprimer un lien">
         <Link size={iconSize} />
       </Button>
+
+      {/* Image URL Dialog */}
+      <Dialog open={imageDialogOpen} onOpenChange={setImageDialogOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Inserer une image</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            <label htmlFor="image-url" className="text-sm font-medium">URL de l&apos;image</label>
+            <Input
+              id="image-url"
+              placeholder="https://example.com/image.jpg"
+              value={urlInput}
+              onChange={(e) => setUrlInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && urlInput.trim()) {
+                  editor.chain().focus().setImage({ src: urlInput.trim() }).run()
+                  setImageDialogOpen(false)
+                  setUrlInput('')
+                }
+              }}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setImageDialogOpen(false)}>
+              Annuler
+            </Button>
+            <Button
+              size="sm"
+              disabled={!urlInput.trim()}
+              onClick={() => {
+                editor.chain().focus().setImage({ src: urlInput.trim() }).run()
+                setImageDialogOpen(false)
+                setUrlInput('')
+              }}
+            >
+              Inserer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Link URL Dialog */}
+      <Dialog open={linkDialogOpen} onOpenChange={setLinkDialogOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Inserer un lien</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            <label htmlFor="link-url" className="text-sm font-medium">URL du lien</label>
+            <Input
+              id="link-url"
+              placeholder="https://example.com"
+              value={urlInput}
+              onChange={(e) => setUrlInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && urlInput.trim()) {
+                  editor.chain().focus().extendMarkRange('link').setLink({ href: urlInput.trim() }).run()
+                  setLinkDialogOpen(false)
+                  setUrlInput('')
+                }
+              }}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setLinkDialogOpen(false)}>
+              Annuler
+            </Button>
+            <Button
+              size="sm"
+              disabled={!urlInput.trim()}
+              onClick={() => {
+                editor.chain().focus().extendMarkRange('link').setLink({ href: urlInput.trim() }).run()
+                setLinkDialogOpen(false)
+                setUrlInput('')
+              }}
+            >
+              Inserer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
