@@ -403,8 +403,8 @@ export function WriterPanel() {
   const isWorking = generating || regeneratingSection !== null
 
   return (
-    <div className="flex flex-col h-full">
-    <ScrollArea className="flex-1">
+    <div className="flex flex-col h-full min-h-0">
+    <ScrollArea className="flex-1 min-h-0">
     <div className="p-4 space-y-4">
       {/* Header */}
       <div className="flex items-center gap-2">
@@ -485,6 +485,7 @@ export function WriterPanel() {
                       onClick={() => handleWrite('section', h2Index)}
                       disabled={isWorking}
                       title={`Regenerer la section "${section.title}"`}
+                      aria-label={`Regenerer la section "${section.title}"`}
                     >
                       {regeneratingSection === h2Index ? (
                         <Loader2 className="size-3 animate-spin" />
