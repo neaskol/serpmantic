@@ -241,6 +241,18 @@ export function AssistantPanel() {
         </div>
       )}
 
+      {/* Empty state */}
+      {!loading && prompts.length === 0 && (
+        <Card size="sm" className="bg-muted/30">
+          <CardContent className="py-4 px-3 text-center">
+            <Bot className="size-8 mx-auto mb-2 text-muted-foreground" />
+            <p className="text-xs text-muted-foreground">
+              Aucun prompt disponible. Contactez votre administrateur ou creez un prompt personnalise.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Prompts by category */}
       {!loading && categories.map((category) => (
         <div key={category}>

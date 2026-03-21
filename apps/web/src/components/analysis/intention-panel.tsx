@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Target, Search, FileCheck, HelpCircle, ShoppingCart, Navigation, BarChart3 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -164,6 +165,14 @@ export function IntentionPanel() {
           )}
         </Button>
       </div>
+
+      {analyzing && (
+        <div className="space-y-3">
+          <Skeleton className="h-16 w-full rounded-lg" />
+          <Skeleton className="h-24 w-full rounded-lg" />
+          <Skeleton className="h-24 w-full rounded-lg" />
+        </div>
+      )}
 
       {serpPages.length === 0 && (
         <p className="text-xs text-muted-foreground text-center">
