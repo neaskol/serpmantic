@@ -15,6 +15,9 @@ function Progress({
       value={value}
       data-slot="progress"
       className={cn("flex flex-wrap gap-3", className)}
+      getAriaValueText={(_formattedValue, v) =>
+        v == null ? "indeterminate progress" : `${v}%`
+      }
       {...props}
     >
       {children}

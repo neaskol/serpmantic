@@ -23,8 +23,11 @@ export function TiptapEditor() {
   const setContent = useEditorStore((s) => s.setContent)
   const setPlainText = useEditorStore((s) => s.setPlainText)
   const setEditor = useEditorStore((s) => s.setEditor)
+  const initialContent = useEditorStore((s) => s.initialContent)
+  const setInitialContent = useEditorStore((s) => s.setInitialContent)
   const recalculateScore = useGuideStore((s) => s.recalculateScore)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const initialContentLoadedRef = useRef(false)
 
   const editor = useEditor({
     extensions: [
@@ -57,6 +60,25 @@ export function TiptapEditor() {
       }, 500)
     },
   })
+
+  // Load initial content from database when editor and content are ready
+  useEffect(() => {
+    if (editor && initialContent && !initialContentLoadedRef.current) {
+      initialContentLoadedRef.current = true
+      console.log('[Editor] Restoring content from database')
+      editor.commands.setContent(initialContent)
+
+      // Sync store and trigger score recalculation
+      const json = editor.getJSON()
+      const text = editor.getText()
+      setContent(json)
+      setPlainText(text)
+      recalculateScore(text, json as Record<string, unknown>)
+
+      // Clear initial content to avoid re-loading
+      setInitialContent(null)
+    }
+  }, [editor, initialContent, setContent, setPlainText, recalculateScore, setInitialContent])
 
   // Register editor instance with store
   useEffect(() => {

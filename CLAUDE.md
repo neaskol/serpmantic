@@ -251,33 +251,35 @@ Exemples observés :
 
 ## 10. MÉCANISMES TECHNIQUES DÉTAILLÉS
 
-### 10.1 Pipeline d'analyse SERP (backend)
+### 10.1 Pipeline d'analyse SERP (backend — implémenté)
 
-1. Réception mot-clé + locale (langue, pays, moteur de recherche)
-2. Requête API Google Search (ou Bing selon config)
+1. Réception mot-clé + locale (langue, pays) via `/api/serp/analyze`
+2. Requête SerpAPI (Google Search) — `apps/web/src/lib/serp.ts`
 3. Récupération des ~10 premières URLs de la SERP
-4. Filtrage des URLs non pertinentes (réseaux sociaux, Wikipedia, etc.)
-5. Crawl HTTP de chaque page + extraction du HTML
+4. Filtrage des URLs non pertinentes (réseaux sociaux, Wikipedia, etc.) — filtrage par domaine
+5. Crawl HTTP de chaque page via Cheerio — `apps/web/src/lib/crawler.ts`
 6. Parsing et nettoyage : suppression navigation, footer, publicités, scripts
-7. Extraction du texte éditorial uniquement
-8. Calcul des métriques structurelles (word count, headings, paragraphs, links, images, videos, tables, lists)
-9. NLP : tokenisation → lemmatisation → normalisation (lowercase, suppression accents)
-10. Calcul TF-IDF ou cooccurrence → dictionnaire de termes significatifs
+7. Extraction du texte éditorial + calcul des métriques structurelles
+8. Envoi au service NLP Python (TextRazor v2.0) — `services/nlp/textrazor_pipeline.py`
+9. NLP : tokenisation → lemmatisation → normalisation (lowercase, suppression accents) via TextRazor API
+10. Extraction TF-IDF + n-grams (unigrammes, bigrammes, trigrammes)
 11. Calcul des percentiles (P10-P90) pour les fourchettes d'occurrences
-12. Construction du référentiel sémantique stocké en base
-13. Calcul du score sémantique de chaque page SERP (score 0-120)
+12. Construction du référentiel sémantique stocké en Supabase (tables `serp_analyses`, `serp_pages`, `semantic_terms`)
+13. Calcul du score sémantique de chaque page SERP (score 0-120) — `apps/web/src/lib/scoring.ts`
+14. Cache NLP par URL (Supabase, TTL 7 jours) — `apps/web/src/lib/nlp-cache.ts`
+15. Agrégation client-side des résultats NLP — `apps/web/src/lib/nlp-aggregator.ts`
 
-### 10.2 Pipeline de scoring temps réel (frontend)
+### 10.2 Pipeline de scoring temps réel (frontend — implémenté)
 
-1. Modification dans l'éditeur → déclenchement (debounce ~500ms)
-2. Extraction du texte brut depuis le modèle de l'éditeur
-3. NLP local ou appel API : tokenisation + lemmatisation + normalisation
+1. Modification dans l'éditeur TipTap → déclenchement (debounce ~500ms)
+2. Extraction du texte brut depuis le modèle de l'éditeur — `editor-store.ts`
+3. Normalisation locale : lowercase, suppression accents — `apps/web/src/lib/text-utils.ts`
 4. Comptage des occurrences pour chaque terme du référentiel SERP
 5. Comparaison avec les fourchettes min-max du référentiel
-6. Calcul du score global (somme pondérée des termes dans/hors fourchette)
-7. Mise à jour de l'UI : score, couleur, compteurs, alertes par terme
+6. Calcul du score global (somme pondérée des termes dans/hors fourchette) — `apps/web/src/lib/scoring.ts`
+7. Mise à jour de l'UI : score, couleur, compteurs, alertes par terme — `guide-store.ts`
 
-### 10.3 Calcul du score global (hypothèse algorithmique)
+### 10.3 Calcul du score global (implémenté)
 
 score = Somme pondérée ( poids_terme × f(occurrences_actuelles, min, max) )
 
@@ -287,16 +289,17 @@ Où f(x, min, max) :
 - si x > max → pénalité (score réduit)
 
 Score normalisé sur une échelle 0-120.
+Labels : Mauvais (0-30), Moyen (31-55), Bon (56-75), Excellent (76-100), Sur-optimisé (>100).
 Seuil vert : ~75-100. Sur-optimisation : > 100 (pénalité affichée).
 
-### 10.4 Architecture IA (IAssistant)
+### 10.4 Architecture IA (IAssistant — implémenté)
 
-1. Prompt utilisateur sélectionné
-2. Enrichissement avec contexte guide (mot-clé, langue, données SERP)
-3. Enrichissement avec contexte utilisateur (audience, ton, secteur)
+1. Prompt utilisateur sélectionné — `apps/web/src/components/analysis/assistant-panel.tsx`
+2. Enrichissement avec contexte guide (mot-clé, langue, données SERP) — `apps/web/src/lib/ai/context-builder.ts`
+3. Enrichissement avec contexte utilisateur (audience, ton, secteur) — `prompt_contexts` table
 4. Enrichissement avec contenu actuel ou sélection de l'éditeur
-5. Routage vers LLM (Anthropic Claude ou OpenAI GPT selon le prompt)
-6. Réception du résultat
+5. Routage vers LLM (Anthropic Claude ou OpenAI GPT selon le prompt) — `apps/web/src/lib/ai/router.ts`
+6. Exécution via Vercel AI SDK — `apps/web/src/lib/ai/executor.ts`
 7. Injection dans l'éditeur (remplacement ou insertion à la position du curseur)
 
 ---
@@ -389,7 +392,7 @@ Seuil vert : ~75-100. Sur-optimisation : > 100 (pénalité affichée).
   "title": "string",
   "description": "string",
   "llmProvider": "anthropic|openai",
-  "model": "claude-sonnet-4-5|gpt-5-chat|gpt-5-mini",
+  "model": "claude-sonnet-4-5|gpt-4o|gpt-4o-mini",
   "promptTemplate": "string (with variables)",
   "scope": "selection|document|full",
   "isPublic": "boolean",
@@ -400,36 +403,37 @@ Seuil vert : ~75-100. Sur-optimisation : > 100 (pénalité affichée).
 
 ---
 
-## 12. FEATURES À IMPLÉMENTER (par priorité)
+## 12. ÉTAT D'AVANCEMENT DES FEATURES
 
-### Priorité 1 — Cœur fonctionnel (MVP)
-- [ ] Crawler SERP + extraction NLP des pages
-- [ ] Construction du référentiel sémantique (termes + fourchettes)
-- [ ] Éditeur WYSIWYG (TipTap recommandé)
-- [ ] Scoring temps réel 0-120 avec mise à jour live
-- [ ] Liste des expressions avec statuts OK/manque/trop
-- [ ] Métriques structurelles avec benchmarks SERP
-- [ ] Section 'termes à éviter'
-- [ ] Benchmark des pages SERP avec scores
+### Priorité 1 — Cœur fonctionnel (MVP) — TERMINÉ
+- [x] Crawler SERP + extraction NLP des pages (`serp.ts`, `crawler.ts`, `textrazor_pipeline.py`)
+- [x] Construction du référentiel sémantique — termes + fourchettes (`semantic_terms` table, P10-P90)
+- [x] Éditeur WYSIWYG TipTap (`tiptap-editor.tsx`, `toolbar.tsx`)
+- [x] Scoring temps réel 0-120 avec mise à jour live (`scoring.ts`, `text-utils.ts`)
+- [x] Liste des expressions avec statuts OK/manque/trop (`semantic-terms-list.tsx`)
+- [x] Métriques structurelles avec benchmarks SERP (`structural-metrics.tsx`)
+- [x] Section 'termes à éviter' (`avoid-terms-list.tsx`)
+- [x] Benchmark des pages SERP avec scores (`serp-benchmark.tsx`)
 
-### Priorité 2 — IA et plan
-- [ ] Module Plan (génération IA du plan H2/H3)
-- [ ] Module IAssistant (bibliothèque de prompts multi-LLM)
-- [ ] Module Intention (analyse intention de recherche)
-- [ ] Module Meta (titre + description avec génération IA)
+### Priorité 2 — IA et plan — TERMINÉ (sauf auto-optimisation)
+- [x] Module Plan — génération IA du plan H2/H3 (`plan-panel.tsx`, `/api/ai/plan`)
+- [x] Module IAssistant — bibliothèque de 15 prompts multi-LLM (`assistant-panel.tsx`, `/api/ai/execute`)
+- [x] Module Intention — analyse intention de recherche (`intention-panel.tsx`, `/api/ai/intention`)
+- [x] Module Meta — titre + description avec génération IA (`meta-panel.tsx`, `/api/ai/meta`)
 - [ ] Optimisation automatique Beta (réécriture IA pour atteindre les fourchettes)
 
-### Priorité 3 — Collaboration et avancé
-- [ ] Système de partage (privé/lecture/édition)
-- [ ] Module Liens (maillage interne avec groupes de guides)
-- [ ] Connexion URL (surveillance de la page publiée)
+### Priorité 3 — Collaboration et avancé — EN COURS
+- [x] Système de partage (privé/lecture/édition) — champ `visibility` + `share_token` en DB
+- [x] Config module — force re-analysis, language selector (`config-panel.tsx`)
+- [~] Module Liens — UI existe (`links-panel.tsx`) mais algorithme de maillage NON implémenté
+- [~] Contextes personnalisés — table `prompt_contexts` + sélecteur, mais CRUD complet manquant
+- [ ] Connexion URL (surveillance de la page publiée) — champ DB existe, pas de logique
 - [ ] Heatmap sémantique dans l'éditeur
-- [ ] Recommandation de date de mise à jour
-- [ ] Support multilingue (FR/EN/IT/DE/ES)
-- [ ] Contextes personnalisés pour les prompts IA
-- [ ] Prompts utilisateurs custom
+- [ ] Recommandation de date de mise à jour — champ DB existe, pas de calcul
+- [ ] Support multilingue routing (FR/EN/IT/DE/ES) — NLP multilingue OK, routing i18n NON
+- [ ] Prompts utilisateurs custom — DB supportée, UI de création manquante
 
-### Priorité 4 — Fonctionnalités manquantes chez SERPmantics (opportunités)
+### Priorité 4 — Fonctionnalités avancées (opportunités) — NON COMMENCÉ
 - [ ] Export PDF/Word du guide
 - [ ] Historique des versions (snapshots du contenu)
 - [ ] Collaboration temps réel (type Google Docs)
@@ -440,35 +444,161 @@ Seuil vert : ~75-100. Sur-optimisation : > 100 (pénalité affichée).
 
 ---
 
-## 13. STACK TECHNIQUE RECOMMANDÉE
+## 13. STACK TECHNIQUE (implémentée)
 
 ### Frontend
-- Framework : Next.js 14+ (App Router)
-- Editeur : TipTap (basé ProseMirror, excellent support React)
-- UI : Tailwind CSS + shadcn/ui
-- State : Zustand ou Jotai (état de l'éditeur + score temps réel)
-- Temps réel : debounce sur les modifications + appels API optimisés
+- **Framework** : Next.js 16.2.0 (App Router)
+- **React** : 19.0.0
+- **Editeur** : TipTap 3.20.4 (basé ProseMirror)
+- **UI** : shadcn/ui style **base-nova** (`@base-ui/react`, PAS Radix UI) + Tailwind CSS v4
+- **State** : Zustand 5.0.12 (4 stores : `guide-store`, `editor-store`, `ai-store`, `context-store`)
+- **Variantes** : class-variance-authority (CVA)
+- **Notifications** : Sonner (toasts)
+- **Temps réel** : debounce 500ms sur les modifications éditeur
 
-### Backend
-- API : Node.js (Express ou Fastify) ou Python (FastAPI)
-- NLP : spaCy (Python) pour lemmatisation multilingue, ou service dédié
-- Crawler : Puppeteer/Playwright pour le rendu JS, Cheerio pour le parsing
-- SERP API : SerpApi, DataForSEO, ou ValueSerp
-- LLM : Anthropic SDK + OpenAI SDK (multi-LLM routing)
-- Queue : Bull/BullMQ pour les jobs de crawl (tâches asynchrones)
+### Backend / API
+- **API Routes** : Next.js Route Handlers (21 routes)
+- **NLP** : Python FastAPI service (`services/nlp/`) avec **TextRazor API v2.0** (lemmatisation multilingue FR/EN/IT/DE/ES)
+- **NLP Fallback** : Pipeline basique tokenisation (`pipeline.py`) pour mode offline
+- **Crawler** : Cheerio (`apps/web/src/lib/crawler.ts`) pour parsing HTML
+- **SERP** : SerpAPI (`apps/web/src/lib/serp.ts`) pour récupération des résultats Google
+- **LLM** : Vercel AI SDK 6.0.132 + `@ai-sdk/anthropic` 3.0.62 + `@ai-sdk/openai` 3.0.46
+  - Anthropic : Claude Sonnet 4.5 (plan), Claude Sonnet 4 (introduction, intention)
+  - OpenAI : GPT-4o (grammaire, médias), GPT-4o-mini (rédaction, sémantique)
+- **Rate Limiting** : Upstash Redis — 5 req/h par user pour analyse SERP
 
 ### Base de données
-- Principale : PostgreSQL (guides, users, prompts, SERP analysis)
-- Cache : Redis (résultats SERP mis en cache, scoring fréquent)
+- **Principale** : Supabase PostgreSQL (9 migrations appliquées)
+  - Tables : `profiles`, `guides`, `guide_groups`, `serp_analyses`, `serp_pages`, `semantic_terms`, `prompts`, `ai_requests`, `prompt_contexts`, `nlp_cache`
+  - Row Level Security (RLS) activé
+  - Index de performance (migration 002)
+- **Cache** : Upstash Redis + ioredis
+  - Cache SERP : TTL 24h
+  - Cache guide : TTL 5min
+  - Cache NLP : Supabase `nlp_cache` table, TTL 7 jours (réduit ~70-80% d'appels TextRazor)
 
 ### Infrastructure
-- Auth : NextAuth.js ou Clerk
-- Storage : S3/R2 pour les médias
-- Déploiement : Vercel (frontend) + Railway/Render (backend + workers)
+- **Auth** : Supabase Auth
+- **Package Manager** : pnpm
+- **Tests** : Vitest 4.1.0 (~25 fichiers de tests, ~40 tests passing)
+- **Linting** : ESLint 9
+- **TypeScript** : 5
+- **Docker** : `services/nlp/Dockerfile` (multi-stage build Python NLP)
+- **Déploiement** : Vercel (web) + Render.com (service NLP Python)
+- **Monitoring** : Widgets dashboard TextRazor + SerpAPI usage
 
 ---
 
-## 14. RÈGLES MÉTIER IMPORTANTES
+## 14. ARCHITECTURE DES FICHIERS (carte du projet)
+
+```
+serpmantic/
+├── apps/web/                          # Next.js 16 application
+│   ├── src/
+│   │   ├── app/
+│   │   │   ├── (dashboard)/dashboard/ # Dashboard avec guide cards
+│   │   │   ├── (editor)/guide/[id]/   # Page éditeur principal
+│   │   │   ├── api/
+│   │   │   │   ├── auth/logout/       # Auth logout
+│   │   │   │   ├── guides/            # CRUD guides
+│   │   │   │   ├── serp/
+│   │   │   │   │   ├── analyze/       # Analyse SERP synchrone
+│   │   │   │   │   ├── analyze-v2/    # Analyse SERP async (job queue)
+│   │   │   │   │   ├── process-job/   # Background job processor
+│   │   │   │   │   ├── process-local/ # Processing local
+│   │   │   │   │   └── job-status/    # Polling status
+│   │   │   │   ├── ai/
+│   │   │   │   │   ├── execute/       # Exécution prompts
+│   │   │   │   │   ├── plan/          # Génération plan H2/H3
+│   │   │   │   │   ├── intention/     # Analyse intention
+│   │   │   │   │   └── meta/          # Génération meta
+│   │   │   │   ├── prompts/           # Gestion prompts
+│   │   │   │   ├── contexts/          # Gestion contextes
+│   │   │   │   ├── nlp-cache/cleanup/ # Nettoyage cache NLP
+│   │   │   │   ├── textrazor/usage/   # Monitoring TextRazor
+│   │   │   │   ├── serpapi/usage/     # Monitoring SerpAPI
+│   │   │   │   └── health/           # Health check
+│   │   │   └── api-docs/             # Swagger UI
+│   │   ├── components/
+│   │   │   ├── ui/                    # 20 composants shadcn (base-nova)
+│   │   │   ├── editor/               # TipTap editor + toolbar
+│   │   │   ├── analysis/             # 15 panneaux d'analyse
+│   │   │   │   ├── analysis-panel.tsx        # Conteneur onglets
+│   │   │   │   ├── assistant-panel.tsx       # IAssistant multi-LLM
+│   │   │   │   ├── plan-panel.tsx            # Génération plan
+│   │   │   │   ├── intention-panel.tsx       # Intention de recherche
+│   │   │   │   ├── score-display.tsx         # Score 0-120
+│   │   │   │   ├── semantic-terms-list.tsx   # Liste expressions
+│   │   │   │   ├── structural-metrics.tsx    # Métriques structurelles
+│   │   │   │   ├── avoid-terms-list.tsx      # Termes à éviter
+│   │   │   │   ├── serp-benchmark.tsx        # Benchmark SERP
+│   │   │   │   ├── meta-panel.tsx            # Meta title/desc
+│   │   │   │   ├── links-panel.tsx           # Maillage interne
+│   │   │   │   ├── config-panel.tsx          # Configuration
+│   │   │   │   ├── context-dialog.tsx        # Dialog contextes
+│   │   │   │   ├── context-selector.tsx      # Sélecteur contexte
+│   │   │   │   └── serp-analysis-progress.tsx # Barre progression
+│   │   │   ├── dashboard/             # Guide cards, create dialog
+│   │   │   │   ├── guide-card.tsx
+│   │   │   │   ├── create-guide-dialog.tsx
+│   │   │   │   ├── textrazor-usage.tsx       # Widget monitoring
+│   │   │   │   └── serpapi-usage.tsx          # Widget monitoring
+│   │   │   └── providers/             # Error boundary, network errors
+│   │   ├── stores/
+│   │   │   ├── guide-store.ts         # Guide data + SERP + scoring + UI
+│   │   │   ├── editor-store.ts        # TipTap instance + content + selection
+│   │   │   ├── ai-store.ts            # AI execution state
+│   │   │   └── context-store.ts       # Prompt contexts
+│   │   └── lib/
+│   │       ├── serp.ts                # SerpAPI integration
+│   │       ├── crawler.ts             # Cheerio page scraper
+│   │       ├── scoring.ts             # Score 0-120 calculation
+│   │       ├── text-utils.ts          # Normalisation texte
+│   │       ├── cache.ts               # Redis cache helpers
+│   │       ├── nlp-cache.ts           # NLP result cache (Supabase)
+│   │       ├── nlp-aggregator.ts      # Client-side NLP aggregation
+│   │       ├── rate-limit.ts          # Upstash rate limiting
+│   │       ├── logger.ts              # Structured logging
+│   │       ├── error-handler.ts       # Standardized API errors
+│   │       ├── supabase/              # Supabase client configs
+│   │       └── ai/
+│   │           ├── router.ts          # LLM provider routing
+│   │           ├── executor.ts        # Prompt execution
+│   │           ├── context-builder.ts # Context enrichment
+│   │           └── outline-builder.ts # Plan H2/H3 generation
+│   └── components.json               # shadcn config (style: base-nova)
+│
+├── services/nlp/                      # Python FastAPI NLP service
+│   ├── main.py                        # FastAPI entrypoint (/analyze, /analyze-with-lemmas)
+│   ├── textrazor_pipeline.py          # TextRazor v2.0 pipeline (production)
+│   ├── pipeline.py                    # Basic NLP fallback (offline)
+│   ├── requirements.txt               # Python dependencies
+│   └── Dockerfile                     # Multi-stage Docker build
+│
+├── supabase/migrations/               # 9 migrations
+│   ├── 001_initial_schema.sql         # profiles, guides, guide_groups, serp_*
+│   ├── 002_add_performance_indexes.sql
+│   ├── 003_add_ai_tables.sql          # prompts, ai_requests
+│   ├── 004_add_guides_rls.sql
+│   ├── 005_fix_guides_rls.sql
+│   ├── 006_seed_public_prompts.sql    # 15 prompts publics
+│   ├── 007_add_prompt_contexts.sql
+│   ├── 008_create_nlp_cache.sql       # Cache NLP per-URL
+│   └── 009_fix_nlp_cache_rls.sql
+│
+├── docs/
+│   ├── plans/                         # Architecture & design docs
+│   ├── RENDER-DEPLOYMENT-GUIDE.md     # Déploiement NLP sur Render
+│   ├── SETUP-UPSTASH.md              # Configuration Redis
+│   ├── MONITORING_TEXTRAZOR.md        # Documentation monitoring TextRazor
+│   └── MONITORING_SERPAPI.md          # Documentation monitoring SerpAPI
+│
+└── docker-compose.yml                 # Stack locale (NLP + Redis)
+```
+
+---
+
+## 15. RÈGLES MÉTIER IMPORTANTES
 
 1. Score plafonné à 120 — Ne jamais afficher un score > 120
 2. Seuil de sur-optimisation — Avertir dès que le score dépasse 100
@@ -483,7 +613,7 @@ Seuil vert : ~75-100. Sur-optimisation : > 100 (pénalité affichée).
 
 ---
 
-## 15. UX ET PÉDAGOGIE
+## 16. UX ET PÉDAGOGIE
 
 - Messages d'état toujours contextuels et actionnables (jamais de message vague)
 - Vidéos tutorielles intégrées dans chaque module (pas de documentation externe)
@@ -495,7 +625,7 @@ Seuil vert : ~75-100. Sur-optimisation : > 100 (pénalité affichée).
 
 ---
 
-## 16. DIFFÉRENCIATEURS CLÉS vs CONCURRENTS
+## 17. DIFFÉRENCIATEURS CLÉS vs CONCURRENTS
 
 - Interface 100% française avec support multilingue natif (FR/EN/IT/DE/ES)
 - Borne haute à 120 avec signal de sur-optimisation (approche pédagogique rare)
@@ -508,7 +638,79 @@ Seuil vert : ~75-100. Sur-optimisation : > 100 (pénalité affichée).
 
 ---
 
-## 17. RÈGLES DE TRAVAIL CLAUDE CODE (Contrat de fonctionnement)
+## 18. CACHING & PERFORMANCE (implémenté)
+
+### Couche 1 — Redis (Upstash)
+- **Cache SERP** : Résultats SerpAPI, TTL 24h — évite les appels redondants
+- **Cache Guide** : Contenu guide, TTL 5min — accélère les lectures fréquentes
+- **Rate Limiting** : 5 req/h par user pour `/api/serp/analyze`
+
+### Couche 2 — Supabase (NLP Cache)
+- **Table** : `nlp_cache` (migration 008) — stockage per-URL des résultats NLP
+- **Clé** : SHA-256 hash de `url + language`
+- **TTL** : 7 jours (configurable)
+- **Impact** : Réduction de ~70-80% des appels TextRazor API
+- **Module** : `apps/web/src/lib/nlp-cache.ts` (batch get/set, cleanup)
+- **Agrégation** : `apps/web/src/lib/nlp-aggregator.ts` (combine résultats cachés + frais)
+
+### Couche 3 — Analyse complète
+- **Table** : `serp_analyses` — cache l'analyse complète d'une requête + langue
+- **Vérification** : Avant chaque analyse, check si une analyse récente existe déjà
+
+---
+
+## 19. MONITORING (implémenté)
+
+### Widgets Dashboard
+- **TextRazor Usage** : `apps/web/src/components/dashboard/textrazor-usage.tsx`
+  - Appels API, requêtes restantes, taux d'utilisation
+  - Endpoint : `/api/textrazor/usage`
+- **SerpAPI Usage** : `apps/web/src/components/dashboard/serpapi-usage.tsx`
+  - Recherches effectuées, quota restant, alertes seuils
+  - Endpoint : `/api/serpapi/usage`
+
+### Structured Logging
+- JSON en production, colorisé en développement — `apps/web/src/lib/logger.ts`
+
+### Error Handling
+- Error boundary React — `apps/web/src/components/error-boundary.tsx`
+- Network error provider — `apps/web/src/components/providers/network-error-provider.tsx`
+- Standardized API errors — `apps/web/src/lib/error-handler.ts`
+
+---
+
+## 20. TESTS (état actuel)
+
+- **Framework** : Vitest 4.1.0 + @vitejs/plugin-react
+- **~25 fichiers de tests**, ~40 tests passing
+- **Tests unitaires** : scoring, text-utils, AI router, context-builder, NLP cache, NLP aggregator
+- **Tests API** : SERP analyze, guides CRUD, AI endpoints, contexts
+- **E2E** : Playwright configuré mais pas de tests écrits
+- **Couverture** : ~70% (objectif 80%)
+
+---
+
+## 21. PROCHAINES ÉTAPES PRIORITAIRES
+
+### Déploiement immédiat
+1. Appliquer migration `008_create_nlp_cache.sql` sur Supabase
+2. Redéployer le service NLP sur Render (endpoint `/analyze-with-lemmas`)
+
+### Fonctionnalités manquantes critiques
+1. Algorithme de maillage interne (liens-panel existe mais sans logique)
+2. Calcul de la recommandation de date de mise à jour
+3. UI de création de prompts utilisateur custom
+4. CRUD complet des contextes IA
+
+### Améliorations techniques
+1. Pipeline CI/CD (GitHub Actions)
+2. Tests E2E Playwright
+3. Intégration Sentry pour monitoring erreurs
+4. Routing i18n Next.js (/fr/, /en/, /it/, /de/, /es/)
+
+---
+
+## 22. RÈGLES DE TRAVAIL CLAUDE CODE (Contrat de fonctionnement)
 
 Ces règles s'appliquent à chaque session de travail. Elles ne sont pas des suggestions, mais un **contrat**.
 
@@ -533,3 +735,9 @@ Ces règles s'appliquent à chaque session de travail. Elles ne sont pas des sug
 ### Règle 5 : Correction autonome des bugs
 - Face à un bug, le corriger directement.
 - Pas besoin d'être pris par la main : aller dans les logs, trouver la cause profonde et résoudre le problème.
+
+### Règle 6 : Conventions UI base-nova
+- Toujours lire `src/components/ui/*.tsx` avant d'utiliser un composant shadcn.
+- Les triggers utilisent `render={<Component />}` au lieu de `asChild`.
+- `Select.onValueChange` passe `string | null` — toujours vérifier null.
+- Consulter `tasks/lessons.md` pour la liste complète des gotchas.
