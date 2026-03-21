@@ -6,6 +6,16 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Plus, Pencil, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import type { PromptContextRecord } from '@/types/database'
@@ -24,6 +34,7 @@ export function ContextDialog({ open, onOpenChange }: ContextDialogProps) {
   const [mode, setMode] = useState<'list' | 'create' | 'edit'>('list')
   const [editingContext, setEditingContext] = useState<PromptContextRecord | null>(null)
   const [saving, setSaving] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   // Form state
   const [name, setName] = useState('')
@@ -78,9 +89,11 @@ export function ContextDialog({ open, onOpenChange }: ContextDialogProps) {
     }
   }
 
-  async function handleDelete(id: string) {
-    await deleteContext(id)
+  async function confirmDelete() {
+    if (!deletingId) return
+    await deleteContext(deletingId)
     toast.success('Contexte supprimé')
+    setDeletingId(null)
   }
 
   function handleOpenChange(nextOpen: boolean) {
@@ -123,7 +136,7 @@ export function ContextDialog({ open, onOpenChange }: ContextDialogProps) {
                         <Button size="icon-xs" variant="ghost" onClick={() => handleEdit(ctx)}>
                           <Pencil className="size-3" />
                         </Button>
-                        <Button size="icon-xs" variant="ghost" onClick={() => handleDelete(ctx.id)}>
+                        <Button size="icon-xs" variant="ghost" onClick={() => setDeletingId(ctx.id)}>
                           <Trash2 className="size-3 text-destructive" />
                         </Button>
                       </div>
@@ -177,6 +190,23 @@ export function ContextDialog({ open, onOpenChange }: ContextDialogProps) {
           </>
         )}
       </DialogContent>
+
+      <AlertDialog open={!!deletingId} onOpenChange={(open) => { if (!open) setDeletingId(null) }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer ce contexte ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Cette action est irreversible. Le contexte sera supprime definitivement.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   )
 }

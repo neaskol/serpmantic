@@ -72,6 +72,7 @@ export function SemanticTermsList({ loading = false }: { loading?: boolean }) {
             size="sm"
             onClick={() => setFilter(f)}
             className="text-xs"
+            aria-pressed={filter === f}
           >
             {f === 'all' ? 'Toutes' : f === 'missing' ? 'A ajouter' : 'A supprimer'}
           </Button>
@@ -86,6 +87,7 @@ export function SemanticTermsList({ loading = false }: { loading?: boolean }) {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9 h-9 text-sm"
+            aria-label="Rechercher un terme"
           />
         </div>
       </div>
