@@ -153,7 +153,8 @@ export function MetaPanel() {
             </Badge>
             <button
               onClick={() => handleCopy(metaTitle, 'title')}
-              className="p-0.5 hover:bg-muted rounded transition-colors"
+              className="p-1.5 hover:bg-muted rounded transition-colors"
+              aria-label="Copier le titre"
             >
               {copiedField === 'title' ? (
                 <Check className="size-3 text-green-500" />
@@ -190,7 +191,8 @@ export function MetaPanel() {
             </Badge>
             <button
               onClick={() => handleCopy(metaDescription, 'description')}
-              className="p-0.5 hover:bg-muted rounded transition-colors"
+              className="p-1.5 hover:bg-muted rounded transition-colors"
+              aria-label="Copier la description"
             >
               {copiedField === 'description' ? (
                 <Check className="size-3 text-green-500" />
