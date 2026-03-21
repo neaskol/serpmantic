@@ -75,8 +75,9 @@ export function CreateGuideDialog() {
         </DialogHeader>
         <div className="space-y-4 pt-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium">Mot-cle cible</label>
+            <label htmlFor="guide-keyword" className="text-sm font-medium">Mot-cle cible</label>
             <Input
+              id="guide-keyword"
               placeholder="Ex: delegataire cee"
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
@@ -84,7 +85,7 @@ export function CreateGuideDialog() {
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium">Langue</label>
+            <label htmlFor="guide-language" className="text-sm font-medium">Langue</label>
             <Select value={language} onValueChange={(v) => v && setLanguage(v)}>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Choisir une langue" />
