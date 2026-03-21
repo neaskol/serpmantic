@@ -68,9 +68,9 @@ export function GuideCard({ guide, onDelete }: GuideCardProps) {
   return (
     <>
       <Card className="hover:shadow-md transition-shadow group relative">
-        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="absolute top-2 right-2">
           <DropdownMenu>
-            <DropdownMenuTrigger render={<Button variant="ghost" size="sm" className="h-8 w-8 p-0" />}>
+            <DropdownMenuTrigger render={<Button variant="ghost" size="sm" className="h-8 w-8 p-0" aria-label="Options du guide" />}>
               <MoreHorizontal className="h-4 w-4" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
