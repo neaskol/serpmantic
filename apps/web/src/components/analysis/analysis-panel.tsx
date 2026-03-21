@@ -73,11 +73,9 @@ export function AnalysisPanel() {
         </TabsContent>
 
         <TabsContent value="writer" className="flex-1 overflow-hidden mt-0">
-          <ScrollArea className="h-full">
-            <ErrorBoundary fallback={panelFallback}>
-              <WriterPanel />
-            </ErrorBoundary>
-          </ScrollArea>
+          <ErrorBoundary fallback={panelFallback}>
+            <WriterPanel />
+          </ErrorBoundary>
         </TabsContent>
 
         <TabsContent value="intention" className="flex-1 overflow-hidden mt-0">

@@ -403,6 +403,8 @@ export function WriterPanel() {
   const isWorking = generating || regeneratingSection !== null
 
   return (
+    <div className="flex flex-col h-full">
+    <ScrollArea className="flex-1">
     <div className="p-4 space-y-4">
       {/* Header */}
       <div className="flex items-center gap-2">
@@ -453,8 +455,7 @@ export function WriterPanel() {
           </Badge>
         </div>
 
-        <ScrollArea className="max-h-[30vh]">
-          <div className="space-y-0.5">
+        <div className="space-y-0.5">
             {sections.map((section, index) => {
               const h2Index = section.level === 'h2'
                 ? sections.filter((s, i) => i <= index && s.level === 'h2').length - 1
@@ -496,7 +497,6 @@ export function WriterPanel() {
               )
             })}
           </div>
-        </ScrollArea>
       </div>
 
       <Separator />
@@ -593,48 +593,7 @@ export function WriterPanel() {
             </Button>
           )}
 
-          {/* Rewrite button */}
-          <Button
-            variant="outline"
-            onClick={() => handleWrite('full')}
-            disabled={isWorking}
-            className="w-full"
-            size="sm"
-          >
-            {generating ? (
-              <>
-                <Loader2 className="size-4 animate-spin" />
-                Reecriture en cours...
-              </>
-            ) : (
-              <>
-                <RefreshCw className="size-4" />
-                Reecrire tout l&apos;article
-              </>
-            )}
-          </Button>
         </>
-      )}
-
-      {/* Write button (first time) */}
-      {!hasGenerated && (
-        <Button
-          onClick={() => handleWrite('full')}
-          disabled={isWorking}
-          className="w-full"
-        >
-          {generating ? (
-            <>
-              <Loader2 className="size-4 animate-spin" />
-              Redaction en cours...
-            </>
-          ) : (
-            <>
-              <PenLine className="size-4" />
-              Ecrire l&apos;article
-            </>
-          )}
-        </Button>
       )}
 
       {/* Cancel button during generation */}
@@ -668,6 +627,61 @@ export function WriterPanel() {
           </CardContent>
         </Card>
       )}
+
+      {/* Footer */}
+      <div className="text-center pt-2">
+        <p className="text-xs text-muted-foreground">
+          Des idees ou remarques ? contact@serpmantics.com
+        </p>
+      </div>
+    </div>
+    </ScrollArea>
+
+      {/* Sticky bottom action button */}
+      <div className="shrink-0 border-t bg-background p-3 space-y-2">
+        {!hasGenerated && (
+          <Button
+            onClick={() => handleWrite('full')}
+            disabled={isWorking}
+            className="w-full"
+            size="sm"
+          >
+            {generating ? (
+              <>
+                <Loader2 className="size-4 animate-spin" />
+                Redaction en cours...
+              </>
+            ) : (
+              <>
+                <PenLine className="size-4" />
+                Ecrire l&apos;article
+              </>
+            )}
+          </Button>
+        )}
+
+        {hasGenerated && (
+          <Button
+            variant="outline"
+            onClick={() => handleWrite('full')}
+            disabled={isWorking}
+            className="w-full"
+            size="sm"
+          >
+            {generating ? (
+              <>
+                <Loader2 className="size-4 animate-spin" />
+                Reecriture en cours...
+              </>
+            ) : (
+              <>
+                <RefreshCw className="size-4" />
+                Reecrire tout l&apos;article
+              </>
+            )}
+          </Button>
+        )}
+      </div>
 
       {/* Confirmation dialog */}
       <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
@@ -705,13 +719,6 @@ export function WriterPanel() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Footer */}
-      <div className="text-center pt-2">
-        <p className="text-xs text-muted-foreground">
-          Des idees ou remarques ? contact@serpmantics.com
-        </p>
-      </div>
     </div>
   )
 }
