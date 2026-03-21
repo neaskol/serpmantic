@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { MoreHorizontal, ExternalLink, Copy, Share2, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { cn } from '@/lib/utils'
 
 interface GuideCardProps {
   guide: {
@@ -37,11 +38,11 @@ interface GuideCardProps {
 }
 
 function getScoreColor(score: number): string {
-  if (score <= 30) return '#ef4444'
-  if (score <= 50) return '#f97316'
-  if (score <= 70) return '#eab308'
-  if (score <= 90) return '#22c55e'
-  return '#3b82f6'
+  if (score <= 30) return 'text-destructive'
+  if (score <= 50) return 'text-warning'
+  if (score <= 70) return 'text-warning'
+  if (score <= 90) return 'text-success'
+  return 'text-info'
 }
 
 export function GuideCard({ guide, onDelete }: GuideCardProps) {
@@ -105,7 +106,7 @@ export function GuideCard({ guide, onDelete }: GuideCardProps) {
             <div className="flex items-center justify-between">
               <Badge variant="outline">{guide.language.toUpperCase()}</Badge>
               <div className="flex items-center gap-2">
-                <span className="text-2xl font-bold" style={{ color: scoreColor }}>
+                <span className={cn("text-2xl font-bold", scoreColor)}>
                   {guide.score}
                 </span>
                 <span className="text-xs text-muted-foreground">/120</span>
