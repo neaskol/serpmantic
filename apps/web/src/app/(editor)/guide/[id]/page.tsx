@@ -20,6 +20,7 @@ import {
 import Link from 'next/link'
 import { toast } from 'sonner'
 import { ErrorBoundary } from '@/components/error-boundary'
+import { Check } from 'lucide-react'
 import { SerpAnalysisProgress, type AnalysisStep, type AnalysisError } from '@/components/analysis/serp-analysis-progress'
 import {
   Dialog,
@@ -48,6 +49,7 @@ export default function GuideEditorPage() {
   const [analysisError, setAnalysisError] = useState<AnalysisError | undefined>()
   const [showProgressDialog, setShowProgressDialog] = useState(false)
   const [currentJobId, setCurrentJobId] = useState<string | null>(null)
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const saveRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
@@ -108,6 +110,7 @@ export default function GuideEditorPage() {
     if (!guide || !content || Object.keys(content).length === 0) return
 
     if (saveRef.current) clearTimeout(saveRef.current)
+    setSaveStatus('saving')
     saveRef.current = setTimeout(async () => {
       try {
         const res = await fetch(`/api/guides/${guide.id}`, {
@@ -116,11 +119,14 @@ export default function GuideEditorPage() {
           body: JSON.stringify({ content, score }),
         })
         if (res.ok) {
-          toast.success('Guide sauvegarde', { duration: 2000 })
+          setSaveStatus('saved')
+          setTimeout(() => setSaveStatus('idle'), 3000)
         } else {
+          setSaveStatus('error')
           toast.error('Erreur lors de la sauvegarde')
         }
       } catch {
+        setSaveStatus('error')
         toast.error('Erreur reseau lors de la sauvegarde')
       }
     }, 3000)
@@ -323,6 +329,23 @@ export default function GuideEditorPage() {
           <Badge style={{ backgroundColor: scoreColor + '20', color: scoreColor }}>
             {scoreLabel}
           </Badge>
+          {saveStatus === 'saving' && (
+            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+              <span className="size-3 border-2 border-muted-foreground border-t-transparent rounded-full animate-spin" />
+              Sauvegarde...
+            </span>
+          )}
+          {saveStatus === 'saved' && (
+            <span className="flex items-center gap-1 text-xs text-green-600">
+              <Check className="size-3" />
+              Sauvegarde
+            </span>
+          )}
+          {saveStatus === 'error' && (
+            <span className="flex items-center gap-1 text-xs text-destructive">
+              Erreur
+            </span>
+          )}
         </div>
       </header>
 
