@@ -99,7 +99,7 @@ export function TiptapEditor() {
       <div className="flex-1 overflow-auto p-6">
         <EditorContent
           editor={editor}
-          className="prose prose-sm max-w-none min-h-full focus:outline-none [&_.tiptap]:outline-none [&_.tiptap]:min-h-[500px]"
+          className="prose max-w-prose mx-auto min-h-full focus:outline-none [&_.tiptap]:outline-none [&_.tiptap]:min-h-[500px]"
         />
       </div>
     </div>
