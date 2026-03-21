@@ -10,6 +10,16 @@ import { Separator } from '@/components/ui/separator'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import {
   FileText,
   Sparkles,
   AlertTriangle,
@@ -23,6 +33,7 @@ import {
   Plus,
   ArrowRight,
   Trash2,
+  RefreshCw,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import type { OutlineSection } from '@/types/database'
@@ -49,6 +60,7 @@ export function PlanPanel() {
   const [showAddForm, setShowAddForm] = useState(false)
   const [newSectionTitle, setNewSectionTitle] = useState('')
   const [newSectionLevel, setNewSectionLevel] = useState<'h2' | 'h3'>('h2')
+  const [showClearDialog, setShowClearDialog] = useState(false)
 
   const editorHasContent = plainText.trim().length > 50
 
@@ -215,7 +227,12 @@ export function PlanPanel() {
   }
 
   function handleClearOutline() {
+    setShowClearDialog(true)
+  }
+
+  function confirmClearOutline() {
     setOutline(null)
+    setShowClearDialog(false)
     toast.info('Plan supprime')
   }
 
@@ -341,14 +358,15 @@ export function PlanPanel() {
                     }`}
                   />
 
-                  {/* Action buttons — visible on hover */}
-                  <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                  {/* Action buttons */}
+                  <div className="flex items-center gap-0.5 shrink-0">
                     <Button
                       variant="ghost"
                       size="icon-xs"
                       onClick={() => handleMoveUp(index)}
                       disabled={index === 0}
                       title="Monter"
+                      aria-label="Monter la section"
                     >
                       <ArrowUp className="size-3" />
                     </Button>
@@ -358,6 +376,7 @@ export function PlanPanel() {
                       onClick={() => handleMoveDown(index)}
                       disabled={index === outline.length - 1}
                       title="Descendre"
+                      aria-label="Descendre la section"
                     >
                       <ArrowDown className="size-3" />
                     </Button>
@@ -366,6 +385,7 @@ export function PlanPanel() {
                       size="icon-xs"
                       onClick={() => handleDelete(index)}
                       title="Supprimer"
+                      aria-label="Supprimer la section"
                       className="text-destructive hover:text-destructive"
                     >
                       <X className="size-3" />
@@ -410,6 +430,7 @@ export function PlanPanel() {
                 onClick={handleAddSection}
                 disabled={!newSectionTitle.trim()}
                 title="Ajouter"
+                aria-label="Ajouter la section"
               >
                 <Plus className="size-3" />
               </Button>
@@ -421,6 +442,7 @@ export function PlanPanel() {
                   setNewSectionTitle('')
                 }}
                 title="Annuler"
+                aria-label="Annuler"
               >
                 <X className="size-3" />
               </Button>
@@ -495,6 +517,23 @@ export function PlanPanel() {
           Des idees ou remarques ? contact@serpmantics.com
         </p>
       </div>
+
+      <AlertDialog open={showClearDialog} onOpenChange={setShowClearDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer le plan ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Le plan genere sera supprime. Cette action est irreversible.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmClearOutline} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
