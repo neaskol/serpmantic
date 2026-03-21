@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
 import { Link2, AlertTriangle, ArrowRight, ArrowLeft, Search } from 'lucide-react'
+import { toast } from 'sonner'
 
 type LinkSuggestion = {
   targetUrl: string
@@ -48,7 +49,7 @@ export function LinksPanel() {
         setSuggestions(data.suggestions)
       }
     } catch {
-      // error handled silently
+      toast.error('Erreur lors de l\'analyse du maillage. Veuillez reessayer.')
     } finally {
       setAnalyzing(false)
     }
