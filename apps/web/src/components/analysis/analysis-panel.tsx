@@ -4,6 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useGuideStore } from '@/stores/guide-store'
 import { ErrorBoundary } from '@/components/error-boundary'
+import { Bot, FileText, PenLine, Target, Search, Link2, FileSearch, Settings } from 'lucide-react'
 import { ScoreDisplay } from './score-display'
 import { StructuralMetrics } from './structural-metrics'
 import { SemanticTermsList } from './semantic-terms-list'
@@ -32,14 +33,14 @@ export function AnalysisPanel() {
     <div className="h-full flex flex-col border-l">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col h-full">
         <TabsList className="grid grid-cols-8 mx-2 mt-2">
-          <TabsTrigger value="assistant" className="text-xs">🤖</TabsTrigger>
-          <TabsTrigger value="plan" className="text-xs">📑</TabsTrigger>
-          <TabsTrigger value="writer" className="text-xs">✍️</TabsTrigger>
-          <TabsTrigger value="intention" className="text-xs">🎯</TabsTrigger>
-          <TabsTrigger value="optimization" className="text-xs">🔍</TabsTrigger>
-          <TabsTrigger value="links" className="text-xs">🔗</TabsTrigger>
-          <TabsTrigger value="meta" className="text-xs">🧐</TabsTrigger>
-          <TabsTrigger value="config" className="text-xs">🔧</TabsTrigger>
+          <TabsTrigger value="assistant" className="text-xs" aria-label="IAssistant"><Bot className="size-3.5" /></TabsTrigger>
+          <TabsTrigger value="plan" className="text-xs" aria-label="Plan de contenu"><FileText className="size-3.5" /></TabsTrigger>
+          <TabsTrigger value="writer" className="text-xs" aria-label="Redaction IA"><PenLine className="size-3.5" /></TabsTrigger>
+          <TabsTrigger value="intention" className="text-xs" aria-label="Intention de recherche"><Target className="size-3.5" /></TabsTrigger>
+          <TabsTrigger value="optimization" className="text-xs" aria-label="Optimisation semantique"><Search className="size-3.5" /></TabsTrigger>
+          <TabsTrigger value="links" className="text-xs" aria-label="Maillage interne"><Link2 className="size-3.5" /></TabsTrigger>
+          <TabsTrigger value="meta" className="text-xs" aria-label="Meta tags"><FileSearch className="size-3.5" /></TabsTrigger>
+          <TabsTrigger value="config" className="text-xs" aria-label="Configuration"><Settings className="size-3.5" /></TabsTrigger>
         </TabsList>
 
         <TabsContent value="optimization" className="flex-1 overflow-hidden mt-0">
