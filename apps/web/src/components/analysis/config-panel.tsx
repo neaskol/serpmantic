@@ -187,6 +187,7 @@ export function ConfigPanel() {
                 size="icon-xs"
                 variant="outline"
                 onClick={handleCopyShareLink}
+                aria-label="Copier le lien de partage"
               >
                 {copied ? <Check className="size-3" /> : <Copy className="size-3" />}
               </Button>
@@ -217,7 +218,7 @@ export function ConfigPanel() {
               onChange={(e) => setLinkedUrl(e.target.value)}
               className="h-7 text-xs flex-1"
             />
-            <Button size="icon-xs" variant="outline" disabled>
+            <Button size="icon-xs" variant="outline" disabled aria-label="Lier la page">
               <Link2 className="size-3" />
             </Button>
           </div>
