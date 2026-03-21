@@ -15,6 +15,7 @@ import { IntentionPanel } from './intention-panel'
 import { LinksPanel } from './links-panel'
 import { MetaPanel } from './meta-panel'
 import { ConfigPanel } from './config-panel'
+import { WriterPanel } from './writer-panel'
 
 export function AnalysisPanel() {
   const activeTab = useGuideStore((s) => s.activeTab)
@@ -30,9 +31,10 @@ export function AnalysisPanel() {
   return (
     <div className="h-full flex flex-col border-l">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col h-full">
-        <TabsList className="grid grid-cols-7 mx-2 mt-2">
+        <TabsList className="grid grid-cols-8 mx-2 mt-2">
           <TabsTrigger value="assistant" className="text-xs">🤖</TabsTrigger>
           <TabsTrigger value="plan" className="text-xs">📑</TabsTrigger>
+          <TabsTrigger value="writer" className="text-xs">✍️</TabsTrigger>
           <TabsTrigger value="intention" className="text-xs">🎯</TabsTrigger>
           <TabsTrigger value="optimization" className="text-xs">🔍</TabsTrigger>
           <TabsTrigger value="links" className="text-xs">🔗</TabsTrigger>
@@ -66,6 +68,14 @@ export function AnalysisPanel() {
           <ScrollArea className="h-full">
             <ErrorBoundary fallback={panelFallback}>
               <PlanPanel />
+            </ErrorBoundary>
+          </ScrollArea>
+        </TabsContent>
+
+        <TabsContent value="writer" className="flex-1 overflow-hidden mt-0">
+          <ScrollArea className="h-full">
+            <ErrorBoundary fallback={panelFallback}>
+              <WriterPanel />
             </ErrorBoundary>
           </ScrollArea>
         </TabsContent>

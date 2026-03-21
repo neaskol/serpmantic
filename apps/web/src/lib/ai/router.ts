@@ -19,6 +19,8 @@ export type TaskType =
   | 'semantic_optimization'
   | 'meta_generation'
   | 'media_suggestions'
+  | 'article_writing'
+  | 'article_optimization'
 
 /**
  * Central mapping of task types to model IDs
@@ -39,6 +41,8 @@ export const MODEL_MAP: Record<TaskType, string> = {
   semantic_optimization: 'openai/gpt-4o-mini',
   meta_generation: 'openai/gpt-4o-mini',
   media_suggestions: 'openai/gpt-4o',
+  article_writing: 'anthropic/claude-sonnet-4-5-20250929',
+  article_optimization: 'openai/gpt-4o',
 }
 
 /**
@@ -62,8 +66,8 @@ export function getModelForTask(taskType: TaskType): string {
  * @param taskType - The type of task to perform
  * @returns Provider name ('anthropic' or 'openai')
  */
-export function getProviderForTask(taskType: TaskType): 'anthropic' | 'openai' {
+export function getProviderForTask(taskType: TaskType): 'anthropic' | 'openai' | 'google' {
   const modelId = MODEL_MAP[taskType]
-  const provider = modelId.split('/')[0] as 'anthropic' | 'openai'
+  const provider = modelId.split('/')[0] as 'anthropic' | 'openai' | 'google'
   return provider
 }

@@ -1,13 +1,15 @@
 import { anthropic } from '@ai-sdk/anthropic'
 import { openai } from '@ai-sdk/openai'
+import { google } from '@ai-sdk/google'
 
 /**
  * Centralized provider registry for multi-LLM support
- * Supports both Anthropic (Claude) and OpenAI (GPT) providers
+ * Supports Anthropic (Claude), OpenAI (GPT), and Google (Gemini) providers
  *
  * Environment variables required:
  * - ANTHROPIC_API_KEY
  * - OPENAI_API_KEY
+ * - GOOGLE_GENERATIVE_AI_API_KEY
  */
 
 /**
@@ -16,6 +18,7 @@ import { openai } from '@ai-sdk/openai'
 export const registry = {
   anthropic,
   openai,
+  google,
 } as const
 
 /**

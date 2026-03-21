@@ -36,6 +36,8 @@ const PRICING: Record<string, { input: number; output: number }> = {
   'anthropic/claude-sonnet-4-20250514': { input: 3.0, output: 15.0 },
   'openai/gpt-4o': { input: 2.5, output: 10.0 },
   'openai/gpt-4o-mini': { input: 0.15, output: 0.6 },
+  'google/gemini-2.5-pro': { input: 1.25, output: 10.0 },
+  'google/gemini-2.5-flash': { input: 0.15, output: 0.6 },
 }
 
 /**
