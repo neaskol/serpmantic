@@ -25,12 +25,13 @@ SERPmantics est un **outil SaaS de SEO sémantique** basé sur l'analyse compara
 - Analyse du contenu en **temps réel** à chaque modification
 - Le texte sélectionné peut être transmis aux prompts IA pour modification locale
 
-### Zone droite — Panneau d'analyse (7 onglets)
+### Zone droite — Panneau d'analyse (8 onglets)
 
 | Onglet | Emoji | Rôle |
 |--------|-------|------|
 | IAssistant | 🤖 | Assistant IA avec bibliothèque de prompts multi-LLM |
 | Plan | 📑 | Génération IA du plan de contenu optimal |
+| Redaction IA | ✍️ | Rédaction automatique multi-provider avec scoring en temps réel |
 | Intention | 🎯 | Analyse de l'intention de recherche |
 | Optimisation | 🔍 | Scoring sémantique temps réel (cœur du produit) |
 | Liens | 🔗 | Recommandations de maillage interne |
@@ -193,7 +194,200 @@ Exemples observés :
 
 ---
 
-## 6. MODULE INTENTION
+## 6. MODULE REDACTION IA (Writer Panel)
+
+### 6.1 Vue d'ensemble
+
+Fonctionnalité de **rédaction automatique complète** avec support multi-provider (Anthropic, OpenAI, Google) et **scoring en temps réel** pendant la génération. Permet de générer un article optimisé SEO directement à partir du plan H2/H3.
+
+**Prérequis** :
+1. Analyse SERP complétée (données sémantiques disponibles)
+2. Plan H2/H3 généré (minimum 2 sections H2)
+
+### 6.2 Architecture multi-provider
+
+Le module supporte **3 fournisseurs LLM** avec sélection par l'utilisateur :
+
+| Provider | Modèles disponibles | Cas d'usage recommandés |
+|----------|---------------------|-------------------------|
+| **Anthropic** | Claude Sonnet 4.5, Claude Sonnet 4 | Rédaction complète, optimisation sémantique |
+| **OpenAI** | GPT-4o, GPT-4o Mini | Génération rapide, réécriture |
+| **Google** | Gemini 2.5 Pro, Gemini 2.5 Flash | Alternative économique, multilangue |
+
+**Modèle par défaut** : `anthropic/claude-sonnet-4-5-20250929`
+
+### 6.3 Trois modes de rédaction
+
+#### Mode 1 : "Écrire l'article" (full mode)
+- **Déclenchement** : Bouton sticky en bas du panneau "Écrire l'article"
+- **Comportement** : Génère l'article **complet** en préservant le plan H2/H3 existant
+- **Pipeline** :
+  1. Extraction des H2/H3 du plan
+  2. Chargement des 40 termes sémantiques prioritaires
+  3. Génération avec fourchette de mots cible (min-max SERP)
+  4. Intégration des termes dans les fourchettes optimales
+  5. Preview HTML dans une dialog de confirmation
+  6. Accepter → Remplace tout le contenu / Rejeter → Annule
+- **Résultat** : Article HTML structuré avec H2/H3 + paragraphes + listes
+
+#### Mode 2 : "Régénérer une section" (section mode)
+- **Déclenchement** : Bouton refresh (🔄) à côté de chaque section H2 (visible après première génération)
+- **Comportement** : Regénère **uniquement** une section H2 (heading + contenu jusqu'à la prochaine H2)
+- **Pipeline** :
+  1. Extraction du contenu actuel de la section
+  2. Chargement des 15 termes sémantiques prioritaires
+  3. Réécriture ciblée de la section
+  4. **Remplacement immédiat** sans confirmation (insertion directe dans l'éditeur)
+- **Résultat** : Section mise à jour in-place
+
+#### Mode 3 : "Optimiser tout l'article" (optimize mode)
+- **Déclenchement** : Bouton "Optimiser tout l'article" (visible si score < 75)
+- **Comportement** : Améliore l'article existant pour atteindre score 75-85
+- **Pipeline** :
+  1. Charge les 20 termes sémantiques manquants/sous-utilisés
+  2. Analyse le contenu actuel
+  3. Modification ciblée des passages pour intégrer les termes manquants
+  4. **Préserve la structure existante** (pas de réorganisation)
+  5. Preview HTML dans une dialog de confirmation
+- **Résultat** : Article optimisé avec meilleur score
+
+### 6.4 Scoring en temps réel
+
+**Affichage après première génération** :
+- Score sémantique 0-120 avec barre de progression
+- Label qualitatif (Mauvais / Moyen / Bon / Excellent / Sur-optimisé)
+- Objectif cible affiché : **75-85**
+- Badges de synthèse :
+  - ❌ X termes manquants
+  - ✅ X termes OK
+  - ⚠️ X termes en excès
+
+**Indicateur de succès** :
+- Si score ≥ 75 ET ≤ 85 → Card verte "Excellent ! Votre score est dans la fourchette optimale"
+
+### 6.5 Streaming et UX
+
+- **Génération en temps réel** : Streaming de texte via ReadableStream
+- **Preview live** : Carte "Aperçu en temps réel" affichant les 500 derniers caractères générés
+- **Bouton annulation** : Arrête la génération en cours (AbortController)
+- **Dialog de confirmation** : Aperçu HTML complet avec scroll avant insertion
+- **Actions** : Accepter (✅ insère dans l'éditeur) / Rejeter (❌ annule)
+
+### 6.6 Détection du plan
+
+- **Algorithme** : Parcours du document TipTap pour détecter les nodes `heading` de niveau 2 ou 3
+- **État activé** : Minimum 2 sections H2 détectées
+- **Affichage** : Liste des sections avec badges H2/H3 + compteur total
+- **Indicateur visuel** : Distinction H2 (badge bleu) / H3 (badge gris + indentation)
+
+### 6.7 États d'affichage
+
+| État | Condition | Affichage |
+|------|-----------|-----------|
+| **1. Pas d'analyse SERP** | `serpPages.length === 0` | Card bleue "Lancez d'abord une analyse SERP" |
+| **2. Pas de plan** | `h2Sections.length < 2` | Card orange "Générez d'abord un plan" + bouton → Plan |
+| **3. Plan détecté, pas d'article** | `hasPlan && !hasGenerated` | Liste des sections + bouton sticky "Écrire l'article" |
+| **4. Article généré** | `hasPlan && hasGenerated` | Score + termes + boutons régénération section + optimisation |
+
+### 6.8 Gestion des erreurs
+
+- **Validation côté API** : Zod schema pour tous les paramètres
+- **Gestion des absences** :
+  - Guide introuvable → 404
+  - Pas d'analyse SERP → 400 "Run analysis first"
+  - Pas de plan H2/H3 → 400 "Generate a plan first"
+- **Erreurs réseau** : Affichage card rouge avec message d'erreur
+- **Timeout** : maxDuration 60s sur l'endpoint API
+
+### 6.9 Intégration base de données
+
+**Table `ai_requests`** : Enregistrement de chaque génération
+- `user_id`, `guide_id`, `model_id`, `prompt_tokens`, `completion_tokens`, `total_tokens`, `estimated_cost`
+- Callback `onFinish` après streaming complet
+- Estimation coûts :
+  - Anthropic : $0.003/1k prompt tokens, $0.015/1k completion tokens (Claude Sonnet 4.5)
+  - OpenAI : $0.0025/1k prompt tokens, $0.010/1k completion tokens (GPT-4o)
+  - Google : $0.00125/1k prompt tokens, $0.005/1k completion tokens (Gemini 2.5 Pro)
+
+### 6.10 Prompts système
+
+**Prompt système (partagé)** :
+```
+You are an expert SEO content writer.
+Target keyword: "{keyword}".
+Language: {language}.
+
+Rules:
+- Write in HTML format using h2, h3, p, ul, li, strong, em tags.
+- Keep existing headings exactly as provided (do not rename or reorder them).
+- Integrate semantic terms naturally into the text.
+- Content must sound human, not AI-generated.
+- Aim for the middle of the occurrence ranges for each semantic term.
+- Do NOT add an H1 title.
+
+Terms to AVOID (do not use these): {termsToAvoid}.
+```
+
+**Prompt utilisateur (mode full)** :
+```
+Write a complete article in HTML using the following heading structure:
+
+<h2>Heading 1</h2>
+<h3>Subheading 1.1</h3>
+...
+
+Target word count: {min}-{max} words.
+
+Semantic terms to integrate (with target occurrence ranges):
+- "terme 1" (3-7 occurrences)
+- "terme 2" (2-5 occurrences)
+...
+
+Return only the HTML content (from the first <h2> to the end). Do not wrap in ```html blocks.
+```
+
+**Prompt utilisateur (mode section)** :
+```
+Rewrite only this section. Keep the heading exactly as-is: "{sectionHeading}".
+
+Current section content:
+{sectionContent}
+
+Semantic terms to integrate (with target occurrence ranges):
+- "terme 1" (1-3 occurrences)
+...
+
+Return only the HTML for this section (heading + body). Do not wrap in ```html blocks.
+```
+
+**Prompt utilisateur (mode optimize)** :
+```
+Optimize the following article to reach a semantic score of 75-85.
+Preserve the existing structure (headings, paragraphs). Only modify passages to better integrate the missing semantic terms.
+
+Current content:
+{currentContent}
+
+Missing semantic terms to add (with target occurrence ranges):
+- "terme 1" (2-4 occurrences)
+...
+
+Return the full optimized HTML. Do not wrap in ```html blocks.
+```
+
+### 6.11 Fichiers impliqués
+
+| Fichier | Rôle |
+|---------|------|
+| `apps/web/src/components/analysis/writer-panel.tsx` | Component principal (726 lignes) |
+| `apps/web/src/app/api/ai/write/route.ts` | Endpoint API (377 lignes) |
+| `apps/web/src/lib/ai/registry.ts` | Registry multi-provider (50 lignes) |
+| `apps/web/src/lib/ai/executor.ts` | Exécution streaming + coût (existant) |
+| `apps/web/src/lib/ai/router.ts` | Routage provider/modèle (existant) |
+
+---
+
+## 7. MODULE INTENTION
 
 - Analyse l'intention de recherche derrière le mot-clé cible
 - Deux actions :
@@ -203,7 +397,7 @@ Exemples observés :
 
 ---
 
-## 7. MODULE LIENS (Maillage interne)
+## 8. MODULE LIENS (Maillage interne)
 
 - Suggestion de maillage interne (liens entrants et sortants)
 - Prérequis : lier une URL à ce guide ET assigner un groupe de guides (autres pages du site)
@@ -212,7 +406,7 @@ Exemples observés :
 
 ---
 
-## 8. MODULE META
+## 9. MODULE META
 
 - Champ 'Titre de la page' : compteur 0/60 caractères, bouton copie
 - Champ 'Meta description' : compteur 0/158 caractères, bouton copie
@@ -222,7 +416,7 @@ Exemples observés :
 
 ---
 
-## 9. MODULE CONFIG
+## 10. MODULE CONFIG
 
 ### 9.1 Modes de partage
 - Privé : accès uniquement au propriétaire
@@ -249,7 +443,7 @@ Exemples observés :
 
 ---
 
-## 10. MÉCANISMES TECHNIQUES DÉTAILLÉS
+## 11. MÉCANISMES TECHNIQUES DÉTAILLÉS
 
 ### 10.1 Pipeline d'analyse SERP (backend — implémenté)
 
@@ -304,7 +498,7 @@ Seuil vert : ~75-100. Sur-optimisation : > 100 (pénalité affichée).
 
 ---
 
-## 11. MODÈLE DE DONNÉES (structures clés)
+## 12. MODÈLE DE DONNÉES (structures clés)
 
 ### Guide (entité principale)
 ```json
@@ -403,7 +597,7 @@ Seuil vert : ~75-100. Sur-optimisation : > 100 (pénalité affichée).
 
 ---
 
-## 12. ÉTAT D'AVANCEMENT DES FEATURES
+## 13. ÉTAT D'AVANCEMENT DES FEATURES
 
 ### Priorité 1 — Cœur fonctionnel (MVP) — TERMINÉ
 - [x] Crawler SERP + extraction NLP des pages (`serp.ts`, `crawler.ts`, `textrazor_pipeline.py`)
@@ -415,12 +609,19 @@ Seuil vert : ~75-100. Sur-optimisation : > 100 (pénalité affichée).
 - [x] Section 'termes à éviter' (`avoid-terms-list.tsx`)
 - [x] Benchmark des pages SERP avec scores (`serp-benchmark.tsx`)
 
-### Priorité 2 — IA et plan — TERMINÉ (sauf auto-optimisation)
+### Priorité 2 — IA et plan — TERMINÉ
 - [x] Module Plan — génération IA du plan H2/H3 (`plan-panel.tsx`, `/api/ai/plan`)
 - [x] Module IAssistant — bibliothèque de 15 prompts multi-LLM (`assistant-panel.tsx`, `/api/ai/execute`)
+- [x] Module Redaction IA — rédaction complète multi-provider avec 3 modes (`writer-panel.tsx`, `/api/ai/write`)
+  - [x] Mode "full" : Génération article complet à partir du plan
+  - [x] Mode "section" : Régénération section par section
+  - [x] Mode "optimize" : Optimisation pour atteindre score 75-85
+  - [x] Support Anthropic (Claude), OpenAI (GPT), Google (Gemini)
+  - [x] Streaming en temps réel avec preview
+  - [x] Dialog de confirmation avec aperçu HTML
+  - [x] Scoring en temps réel après génération
 - [x] Module Intention — analyse intention de recherche (`intention-panel.tsx`, `/api/ai/intention`)
 - [x] Module Meta — titre + description avec génération IA (`meta-panel.tsx`, `/api/ai/meta`)
-- [ ] Optimisation automatique Beta (réécriture IA pour atteindre les fourchettes)
 
 ### Priorité 3 — Collaboration et avancé — EN COURS
 - [x] Système de partage (privé/lecture/édition) — champ `visibility` + `share_token` en DB
@@ -444,7 +645,7 @@ Seuil vert : ~75-100. Sur-optimisation : > 100 (pénalité affichée).
 
 ---
 
-## 13. STACK TECHNIQUE (implémentée)
+## 14. STACK TECHNIQUE (implémentée)
 
 ### Frontend
 - **Framework** : Next.js 16.2.0 (App Router)
@@ -457,14 +658,15 @@ Seuil vert : ~75-100. Sur-optimisation : > 100 (pénalité affichée).
 - **Temps réel** : debounce 500ms sur les modifications éditeur
 
 ### Backend / API
-- **API Routes** : Next.js Route Handlers (21 routes)
+- **API Routes** : Next.js Route Handlers (22 routes, ajout `/api/ai/write`)
 - **NLP** : Python FastAPI service (`services/nlp/`) avec **TextRazor API v2.0** (lemmatisation multilingue FR/EN/IT/DE/ES)
 - **NLP Fallback** : Pipeline basique tokenisation (`pipeline.py`) pour mode offline
 - **Crawler** : Cheerio (`apps/web/src/lib/crawler.ts`) pour parsing HTML
 - **SERP** : SerpAPI (`apps/web/src/lib/serp.ts`) pour récupération des résultats Google
-- **LLM** : Vercel AI SDK 6.0.132 + `@ai-sdk/anthropic` 3.0.62 + `@ai-sdk/openai` 3.0.46
-  - Anthropic : Claude Sonnet 4.5 (plan), Claude Sonnet 4 (introduction, intention)
-  - OpenAI : GPT-4o (grammaire, médias), GPT-4o-mini (rédaction, sémantique)
+- **LLM** : Vercel AI SDK 6.0.132 + `@ai-sdk/anthropic` 3.0.62 + `@ai-sdk/openai` 3.0.46 + `@ai-sdk/google` 1.0.6
+  - **Anthropic** : Claude Sonnet 4.5, Claude Sonnet 4 (plan, introduction, intention, rédaction)
+  - **OpenAI** : GPT-4o, GPT-4o Mini (grammaire, médias, rédaction, sémantique)
+  - **Google** : Gemini 2.5 Pro, Gemini 2.5 Flash (rédaction alternative)
 - **Rate Limiting** : Upstash Redis — 5 req/h par user pour analyse SERP
 
 ### Base de données
@@ -489,7 +691,7 @@ Seuil vert : ~75-100. Sur-optimisation : > 100 (pénalité affichée).
 
 ---
 
-## 14. ARCHITECTURE DES FICHIERS (carte du projet)
+## 15. ARCHITECTURE DES FICHIERS (carte du projet)
 
 ```
 serpmantic/
@@ -510,6 +712,7 @@ serpmantic/
 │   │   │   │   ├── ai/
 │   │   │   │   │   ├── execute/       # Exécution prompts
 │   │   │   │   │   ├── plan/          # Génération plan H2/H3
+│   │   │   │   │   ├── write/         # Rédaction article multi-mode
 │   │   │   │   │   ├── intention/     # Analyse intention
 │   │   │   │   │   └── meta/          # Génération meta
 │   │   │   │   ├── prompts/           # Gestion prompts
@@ -522,10 +725,11 @@ serpmantic/
 │   │   ├── components/
 │   │   │   ├── ui/                    # 20 composants shadcn (base-nova)
 │   │   │   ├── editor/               # TipTap editor + toolbar
-│   │   │   ├── analysis/             # 15 panneaux d'analyse
-│   │   │   │   ├── analysis-panel.tsx        # Conteneur onglets
+│   │   │   ├── analysis/             # 16 panneaux d'analyse
+│   │   │   │   ├── analysis-panel.tsx        # Conteneur onglets (8 onglets)
 │   │   │   │   ├── assistant-panel.tsx       # IAssistant multi-LLM
 │   │   │   │   ├── plan-panel.tsx            # Génération plan
+│   │   │   │   ├── writer-panel.tsx          # Redaction IA multi-provider (726 lignes)
 │   │   │   │   ├── intention-panel.tsx       # Intention de recherche
 │   │   │   │   ├── score-display.tsx         # Score 0-120
 │   │   │   │   ├── semantic-terms-list.tsx   # Liste expressions
@@ -562,8 +766,9 @@ serpmantic/
 │   │       ├── error-handler.ts       # Standardized API errors
 │   │       ├── supabase/              # Supabase client configs
 │   │       └── ai/
+│   │           ├── registry.ts        # Multi-provider registry (Anthropic/OpenAI/Google)
 │   │           ├── router.ts          # LLM provider routing
-│   │           ├── executor.ts        # Prompt execution
+│   │           ├── executor.ts        # Prompt execution + streaming + cost estimation
 │   │           ├── context-builder.ts # Context enrichment
 │   │           └── outline-builder.ts # Plan H2/H3 generation
 │   └── components.json               # shadcn config (style: base-nova)
@@ -598,7 +803,7 @@ serpmantic/
 
 ---
 
-## 15. RÈGLES MÉTIER IMPORTANTES
+## 16. RÈGLES MÉTIER IMPORTANTES
 
 1. Score plafonné à 120 — Ne jamais afficher un score > 120
 2. Seuil de sur-optimisation — Avertir dès que le score dépasse 100
@@ -613,7 +818,7 @@ serpmantic/
 
 ---
 
-## 16. UX ET PÉDAGOGIE
+## 17. UX ET PÉDAGOGIE
 
 - Messages d'état toujours contextuels et actionnables (jamais de message vague)
 - Vidéos tutorielles intégrées dans chaque module (pas de documentation externe)
@@ -625,12 +830,14 @@ serpmantic/
 
 ---
 
-## 17. DIFFÉRENCIATEURS CLÉS vs CONCURRENTS
+## 18. DIFFÉRENCIATEURS CLÉS vs CONCURRENTS
 
 - Interface 100% française avec support multilingue natif (FR/EN/IT/DE/ES)
 - Borne haute à 120 avec signal de sur-optimisation (approche pédagogique rare)
 - Section 'termes à éviter' (analyse en négatif, unique sur le marché)
 - Multi-LLM transparent : l'utilisateur voit quel modèle est utilisé pour chaque prompt
+- **Rédaction IA multi-provider** : Choix entre Anthropic, OpenAI, Google avec 3 modes (full/section/optimize)
+- **Scoring en temps réel pendant génération** : Preview streaming + score immédiat après insertion
 - Système de partage collaboratif (lecture/édition)
 - Vidéos tutorielles inline dans chaque module
 - Recommandation de date de mise à jour du contenu
@@ -638,7 +845,7 @@ serpmantic/
 
 ---
 
-## 18. CACHING & PERFORMANCE (implémenté)
+## 19. CACHING & PERFORMANCE (implémenté)
 
 ### Couche 1 — Redis (Upstash)
 - **Cache SERP** : Résultats SerpAPI, TTL 24h — évite les appels redondants
@@ -659,7 +866,7 @@ serpmantic/
 
 ---
 
-## 19. MONITORING (implémenté)
+## 20. MONITORING (implémenté)
 
 ### Widgets Dashboard
 - **TextRazor Usage** : `apps/web/src/components/dashboard/textrazor-usage.tsx`
@@ -679,7 +886,7 @@ serpmantic/
 
 ---
 
-## 20. TESTS (état actuel)
+## 21. TESTS (état actuel)
 
 - **Framework** : Vitest 4.1.0 + @vitejs/plugin-react
 - **~25 fichiers de tests**, ~40 tests passing
@@ -690,7 +897,7 @@ serpmantic/
 
 ---
 
-## 21. PROCHAINES ÉTAPES PRIORITAIRES
+## 22. PROCHAINES ÉTAPES PRIORITAIRES
 
 ### Déploiement immédiat
 1. Appliquer migration `008_create_nlp_cache.sql` sur Supabase
@@ -701,6 +908,7 @@ serpmantic/
 2. Calcul de la recommandation de date de mise à jour
 3. UI de création de prompts utilisateur custom
 4. CRUD complet des contextes IA
+5. Tests pour le module Writer Panel (writer-panel.test.tsx, /api/ai/write.test.ts)
 
 ### Améliorations techniques
 1. Pipeline CI/CD (GitHub Actions)
@@ -710,7 +918,7 @@ serpmantic/
 
 ---
 
-## 22. RÈGLES DE TRAVAIL CLAUDE CODE (Contrat de fonctionnement)
+## 23. RÈGLES DE TRAVAIL CLAUDE CODE (Contrat de fonctionnement)
 
 Ces règles s'appliquent à chaque session de travail. Elles ne sont pas des suggestions, mais un **contrat**.
 
